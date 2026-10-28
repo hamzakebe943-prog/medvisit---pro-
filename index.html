@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MedVisit Pro</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--bg:#f4f7fa;--card:#fff;--tx:#12263f;--mu:#5d6f85;--navy:#0f2a4a;--gr:#1f9d6b;--bd:#d9e2ec;--rd:#c0392b}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1624;--card:#122338;--tx:#e6edf5;--mu:#93a4b8;--bd:#24384f}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+header{background:var(--navy);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+header b{font-size:18px}header button{background:none;border:1px solid #6b86a6;color:#fff;border-radius:8px;padding:6px 10px;font:inherit}
+main{max-width:760px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:12px}
+input,select,textarea{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:10px;width:100%;margin-bottom:8px}
+label{display:block;font-size:14px;font-weight:600;margin-top:6px}
+.btn{background:var(--gr);color:#fff;border:0;border-radius:8px;padding:11px 16px;font:inherit;font-weight:600;margin:4px 4px 4px 0}
+.btn.s{background:var(--card);color:var(--tx);border:1px solid var(--bd)}.btn.r{background:var(--rd)}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}.tabs .btn{margin:0}
+.mu{color:var(--mu);font-size:14px}.err{color:var(--rd);font-weight:600}.ok{color:var(--gr);font-weight:600}
+.tag{padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600;color:#fff;background:#6b7c93}
+.tag.validated{background:var(--gr)}.tag.submitted{background:#2b6cb0}.tag.to_fix{background:#b7791f}
+:focus-visible{outline:3px solid #4aa3ff;outline-offset:2px}
+</style></head><body>
+<header><b>MedVisit Pro</b><span id="who"></span></header>
+<main id="m">Chargement…</main>
+<script>
+const SB=supabase.createClient("https://daibigynbynhwmgwdevo.supabase.co","sb_publishable_u6XgsnKd5hQInDJIkGG3yQ_o4ha_uDh");
+const ST={draft:"Brouillon",submitted:"Soumis",validated:"Validé",to_fix:"À corriger"};
+const RL={lab_admin:"Administrateur",supervisor:"Superviseur",delegate:"Délégué",super_admin:"Super admin"};
+const KINDS=["Pharmacie","Hôpital","Clinique","Centre de santé","Poste de santé","Cabinet médical","Autre"];
+const FUNCS=["Médecin","Pharmacien","Sage-femme","Infirmier","Responsable de structure","Autre"];
+let U=null,P=null,L=null,tab="new",msg="";
+const $=s=>document.querySelector(s),v=id=>document.getElementById(id).value.trim();
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const M=(t,ok)=>`<p class="${ok?"ok":"err"}" role="status">${esc(t)}</p>`;
+async function boot(){
+  const{data}=await SB.auth.getSession();U=data.session?.user||null;P=L=null;
+  if(U){const r=await SB.from("profiles").select("*").eq("id",U.id).single();P=r.data;
+    if(P?.lab_id){const l=await SB.from("laboratories").select("*").eq("id",P.lab_id).single();L=l.data}}
+  $("#who").innerHTML=U?`<button onclick="out()">Se déconnecter</button>`:"";
+  render()}
+async function out(){await SB.auth.signOut();msg="";boot()}
+function render(){const m=$("#m");
+  if(!U)return m.innerHTML=authView();
+  if(!P?.lab_id)return m.innerHTML=joinView();
+  if(!P.approved)return m.innerHTML=`<div class="card"><h2>En attente de validation</h2><p>Votre administrateur doit approuver votre compte pour le laboratoire ${esc(L?.name||"")}. Revenez plus tard.</p><button class="btn s" onclick="boot()">Actualiser</button></div>`;
+  appView()}
+function authView(){return `<div class="card"><h2>Connexion</h2><label for="em">E-mail</label><input id="em" type="email" autocomplete="email"><label for="pw">Mot de passe (8 caractères minimum)</label><input id="pw" type="password" autocomplete="current-password">
+<button class="btn" onclick="login()">Se connecter</button></div>
+<div class="card"><h2>Créer un compte</h2><label for="fn">Prénom</label><input id="fn"><label for="ln">Nom</label><input id="ln"><p class="mu">Utilisez l’e-mail et le mot de passe saisis ci-dessus.</p><button class="btn s" onclick="signup()">Créer mon compte</button></div>${msg?M(msg):""}`}
+async function login(){const r=await SB.auth.signInWithPassword({email:v("em"),password:v("pw")});if(r.error){msg="Connexion impossible : "+r.error.message;return render()}msg="";boot()}
+async function signup(){const r=await SB.auth.signUp({email:v("em"),password:v("pw"),options:{data:{first_name:v("fn"),last_name:v("ln")}}});
+  if(r.error){msg="Inscription impossible : "+r.error.message;return render()}
+  if(!r.data.session){msg="Compte créé. Confirmez votre e-mail puis connectez-vous.";return render()}boot()}
+function joinView(){return `<div class="card"><h2>Votre laboratoire</h2><p>Bonjour ${esc(P?.first_name||"")}. Créez l’espace de votre laboratoire ou rejoignez-en un avec le code reçu.</p>
+<label for="ln2">Nom du laboratoire</label><input id="ln2"><button class="btn" onclick="mkLab()">Créer le laboratoire</button><hr>
+<label for="jc">Code d’invitation</label><input id="jc" autocapitalize="off"><button class="btn s" onclick="joinLab()">Rejoindre</button>${msg?M(msg):""}</div>`}
+async function mkLab(){const r=await SB.rpc("create_laboratory",{lab_name:v("ln2")});msg=r.error?r.error.message:"";boot()}
+async function joinLab(){const r=await SB.rpc("join_laboratory",{code:v("jc")});msg=r.error?r.error.message:"";boot()}
+function appView(){const adm=P.role==="lab_admin",sup=adm||P.role==="supervisor";
+  const T=[["new","Nouvelle visite"],["list",sup?"Rapports":"Mes visites"]].concat(adm?[["team","Équipe"]]:[]);
+  $("#m").innerHTML=`<p class="mu">${esc(L.name)} · ${RL[P.role]}</p><div class="tabs">${T.map(([k,l])=>`<button class="btn ${k===tab?"":"s"}" onclick="tab='${k}';appView()">${l}</button>`).join("")}</div><div id="t"></div>`;
+  ({new:newV,list:listV,team:teamV}[tab])()}
+function newV(){if(P.role!=="delegate"){$("#t").innerHTML=`<div class="card">Seuls les délégués créent des visites. Pour tester, créez un second compte et rejoignez le laboratoire avec le code (onglet Équipe).</div>`;return}
+$("#t").innerHTML=`<div class="card"><label for="d">Date</label><input id="d" type="date" value="${new Date().toISOString().slice(0,10)}">
+<label for="pro">Professionnel de santé</label><input id="pro"><label for="fo">Fonction</label><select id="fo">${FUNCS.map(x=>`<option>${x}</option>`).join("")}</select>
+<label for="et">Établissement</label><input id="et"><label for="ty">Type</label><select id="ty">${KINDS.map(x=>`<option>${x}</option>`).join("")}</select>
+<label for="ci">Ville</label><input id="ci"><label for="ob">Objet de la visite</label><input id="ob"><label for="pd">Produits présentés (séparés par des virgules)</label><input id="pd">
+<label for="re">Résultat et observations</label><textarea id="re" rows="3"></textarea><label for="na">Prochaine action</label><input id="na">
+<p class="mu">Aucune donnée de patient. Les photos ne sont pas encore disponibles.</p>
+<button class="btn s" onclick="saveV('draft')">Enregistrer le brouillon</button><button class="btn" onclick="saveV('submitted')">Soumettre</button><div id="r"></div></div>`}
+async function saveV(st){const r=$("#r");if(!v("pro")||!v("et")){r.innerHTML=M("Indiquez le professionnel et l’établissement.");return}
+  let e=await SB.from("establishments").select("id").eq("lab_id",P.lab_id).ilike("name",v("et")).limit(1);
+  let eid=e.data?.[0]?.id;
+  if(!eid){const n=await SB.from("establishments").insert({lab_id:P.lab_id,name:v("et"),kind:v("ty"),city:v("ci")||null}).select("id").single();if(n.error){r.innerHTML=M(n.error.message);return}eid=n.data.id}
+  let p=await SB.from("professionals").select("id").eq("lab_id",P.lab_id).eq("establishment_id",eid).ilike("full_name",v("pro")).limit(1);
+  let pid=p.data?.[0]?.id;
+  if(!pid){const n=await SB.from("professionals").insert({lab_id:P.lab_id,establishment_id:eid,full_name:v("pro"),function:v("fo")}).select("id").single();if(n.error){r.innerHTML=M(n.error.message);return}pid=n.data.id}
+  const x=await SB.from("visits").insert({lab_id:P.lab_id,delegate_id:U.id,visited_at:v("d")+"T09:00:00Z",establishment_id:eid,professional_id:pid,purpose:v("ob"),products:v("pd")?v("pd").split(",").map(s=>s.trim()):[],outcome:v("re"),next_action:v("na"),status:st});
+  if(x.error){r.innerHTML=M(x.error.message);return}tab="list";appView()}
+async function listV(){$("#t").innerHTML="Chargement…";
+  const r=await SB.from("visits").select("id,visited_at,status,delegate_id,establishments(name,city),professionals(full_name,function),profiles(first_name,last_name)").order("visited_at",{ascending:false});
+  if(r.error){$("#t").innerHTML=M(r.error.message);return}
+  const sup=P.role!=="delegate";
+  $("#t").innerHTML=(r.data.map(a=>`<div class="card"><b>${esc(a.professionals?.full_name)}</b> <span class="mu">${esc(a.professionals?.function)}</span><br>${esc(a.establishments?.name)} ${esc(a.establishments?.city||"")}<br><span class="mu">${a.visited_at.slice(0,10)}${sup?" · "+esc((a.profiles?.first_name||"")+" "+(a.profiles?.last_name||"")):""}</span> <span class="tag ${a.status}">${ST[a.status]}</span><br>
+${sup&&a.status==="submitted"?`<button class="btn" onclick="setS('${a.id}','validated')">Valider</button><button class="btn s" onclick="setS('${a.id}','to_fix')">Renvoyer</button>`:""}
+${!sup&&["draft","to_fix"].includes(a.status)?`<button class="btn" onclick="setS('${a.id}','submitted')">Soumettre</button>`:""}</div>`).join("")||`<div class="card">Aucune visite pour l’instant.</div>`)+`<div id="r"></div>`}
+async function setS(id,s){const r=await SB.from("visits").update({status:s}).eq("id",id);if(r.error){$("#r").innerHTML=M(r.error.message);return}listV()}
+async function teamV(){const r=await SB.from("profiles").select("id,first_name,last_name,role,approved").eq("lab_id",P.lab_id);
+  $("#t").innerHTML=`<div class="card"><b>Code d’invitation : ${esc(L.join_code)}</b><p class="mu">Donnez-le à vos délégués. Ils devront ensuite être approuvés ici.</p></div>`+
+  (r.data||[]).map(u=>`<div class="card">${esc(u.first_name||"")} ${esc(u.last_name||"")} <span class="mu">${u.approved?"actif":"en attente"}</span><br>
+${u.id===U.id?`<span class="mu">${RL[u.role]} (vous)</span>`:`<select onchange="setRole('${u.id}',this.value)">${["delegate","supervisor","lab_admin"].map(k=>`<option value="${k}" ${u.role===k?"selected":""}>${RL[k]}</option>`).join("")}</select>${u.approved?"":`<button class="btn" onclick="appr('${u.id}')">Approuver</button>`}`}</div>`).join("")+`<div id="r"></div>`}
+async function appr(id){await SB.from("profiles").update({approved:true}).eq("id",id);teamV()}
+async function setRole(id,role){const r=await SB.from("profiles").update({role}).eq("id",id);if(r.error)$("#r").innerHTML=M(r.error.message)}
+SB.auth.onAuthStateChange(()=>{});boot();
+</script></body></html>
