@@ -11,7 +11,7 @@ header{background:var(--navy);color:#fff;padding:10px 16px;display:flex;justify-
 .brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px}
 header button{background:none;border:1px solid #6b86a6;color:#fff;border-radius:8px;padding:5px 10px;font:inherit;font-size:13px}
 main{max-width:520px;margin:0 auto;padding:16px}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:12px}
+.card{overflow-wrap:anywhere;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:12px}
 h2{font-size:18px;margin:0 0 4px}.sub{color:var(--mu);font-size:13px;margin:0 0 10px}
 input,select,textarea{font:inherit;font-size:16px;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;width:100%;margin-bottom:6px}
 label{display:block;font-size:13px;font-weight:600;margin-top:6px}
@@ -140,10 +140,10 @@ function shrink(f){return new Promise(ok=>{const i=new Image();i.onload=()=>{con
 async function photo(id,path){const e=document.getElementById("p_"+id);const r=await SB.storage.from("visit-photos").createSignedUrl(path,120);
   e.innerHTML=r.error?M(r.error.message):`<img src="${r.data.signedUrl}" alt="Justificatif de la visite" style="max-width:100%;border-radius:8px;margin-top:6px">`}
 async function listV(){$("#t").innerHTML="Chargement…";
-  const r=await SB.from("visits").select("id,visited_at,status,delegate_id,establishments(name,city),professionals(full_name,function),profiles(first_name,last_name),visit_files(storage_path)").order("visited_at",{ascending:false});
+  const r=await SB.from("visits").select("id,visited_at,status,delegate_id,establishments(name,city,kind),professionals(full_name,function),profiles(first_name,last_name),visit_files(storage_path)").order("visited_at",{ascending:false});
   if(r.error){$("#t").innerHTML=M(r.error.message);return}
   const sup=P.role!=="delegate";
-  $("#t").innerHTML=(r.data.map(a=>`<div class="card"><b>${esc(a.professionals?.full_name)}</b> <span class="mu">${esc(a.professionals?.function)}</span><br>${esc(a.establishments?.name)} ${esc(a.establishments?.city||"")}<br><span class="mu">${a.visited_at.slice(0,10)}${sup?" · "+esc((a.profiles?.first_name||"")+" "+(a.profiles?.last_name||"")):""}</span> <span class="tag ${a.status}">${ST[a.status]}</span> ${a.visit_files?.length?(PH[a.id]=a.visit_files.map(f=>f.storage_path),`<button class="lk" onclick="photos('${a.id}')">Voir les pages (${a.visit_files.length})</button>`):""}<div id="p_${a.id}"></div>
+  $("#t").innerHTML=(r.data.map(a=>`<div class="card"><b style="font-size:16px">${esc(a.professionals?.full_name)}</b><div class="mu">${esc(a.professionals?.function)}</div><div style="margin-top:6px"><b>${esc(a.establishments?.name)}</b>${a.establishments?.city?" · "+esc(a.establishments.city):""}</div><div class="mu">${esc(a.establishments?.kind)}</div><div class="mu" style="margin:4px 0 6px">${a.visited_at.slice(0,10)}${sup?" · "+esc((a.profiles?.first_name||"")+" "+(a.profiles?.last_name||"")):""}</div><span class="tag ${a.status}">${ST[a.status]}</span> ${a.visit_files?.length?(PH[a.id]=a.visit_files.map(f=>f.storage_path),`<button class="lk" onclick="photos('${a.id}')">Voir les pages (${a.visit_files.length})</button>`):""}<div id="p_${a.id}"></div>
 ${sup&&a.status==="submitted"?`<button class="btn" onclick="setS('${a.id}','validated')">Valider</button><button class="btn s" onclick="setS('${a.id}','to_fix')">Renvoyer</button>`:""}
 ${!sup&&["draft","to_fix"].includes(a.status)?`<button class="btn" onclick="setS('${a.id}','submitted')">Soumettre</button>`:""}${!sup&&["draft","to_fix","submitted"].includes(a.status)?`<button class="btn s" onclick="delV('${a.id}')">Supprimer</button>`:""}</div>`).join("")||`<div class="card">Aucune visite pour l’instant.</div>`)+`<div id="r"></div>`}
 async function setS(id,s){const r=await SB.from("visits").update({status:s}).eq("id",id);if(r.error){$("#r").innerHTML=M(r.error.message);return}listV()}
