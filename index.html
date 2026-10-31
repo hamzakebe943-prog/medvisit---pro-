@@ -30,6 +30,7 @@ label{display:block;font-size:13px;font-weight:600;margin-top:6px}
 .kp .c1{background:linear-gradient(135deg,#0f2a4a,#2f5d9e)}.kp .c2{background:linear-gradient(135deg,#17805a,#2fb987)}.kp .c3{background:linear-gradient(135deg,#2f5fd0,#5a8df0)}.kp .c4{background:linear-gradient(135deg,#6b3fb5,#9a6fe0)}
 .kp .c1,.kp .c2,.kp .c3,.kp .c4{color:#fff;border:0}.kp .c1 .mu,.kp .c2 .mu,.kp .c3 .mu,.kp .c4 .mu{color:#e3ecf8}
 @media(min-width:900px){main{max-width:980px}.kp{grid-template-columns:repeat(4,1fr)}.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.g2 .card{margin:0}}
+.ci{display:flex;align-items:center;gap:8px;font-weight:400;margin:3px 0;font-size:15px}.ci input{width:auto;margin:0}.ck{border:1px solid var(--bd);border-radius:8px;padding:8px 10px;margin-bottom:6px}
 .ph{display:flex;align-items:center;justify-content:center;border:2px dashed var(--gr);border-radius:10px;padding:22px;color:var(--gr);font-weight:600;cursor:pointer;margin-top:4px}
 .dn{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.al{border-color:#d69e2e}
 :focus-visible{outline:3px solid #4aa3ff;outline-offset:2px}
@@ -44,7 +45,7 @@ const ST={draft:"Brouillon",submitted:"Soumis",validated:"Validé",to_fix:"À co
 const RL={lab_admin:"Administrateur",supervisor:"Superviseur",delegate:"Délégué médical",super_admin:"Super admin"};
 const KINDS=["Pharmacie","Hôpital","Clinique","Centre de santé","Poste de santé","Cabinet médical","Autre"];
 const FUNCS=["Médecin","Pharmacien","Sage-femme","Infirmier","Responsable de structure","Autre"];
-let U=null,P=null,L=null,tab="dash",per=30,msg="",recovery=false;
+let U=null,P=null,L=null,tab="dash",per=30,msg="",recovery=false,pend=null;
 const $=s=>document.querySelector(s),v=id=>document.getElementById(id)?.value.trim()||"";
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const M=(t,ok)=>t?`<p class="${ok?"ok":"err"}" role="status">${esc(t)}</p>`:"";
@@ -75,6 +76,7 @@ function authView(){const r=route();
 <label for="jc">Code d’invitation du laboratoire</label><input id="jc" autocapitalize="off"><p class="mu">Votre fonction et votre rattachement seront validés par l’administrateur du laboratoire.</p></div>
 <div id="bc" style="display:none"><label for="lb">Nom du laboratoire</label><input id="lb"><p class="mu">Vous en deviendrez l’administrateur.</p></div>
 <button class="btn w" onclick="signup()">Créer mon compte</button>${M(msg)}<button class="lk" onclick="go('connexion')">J’ai déjà un compte</button></div>`;
+  if(r==="verification")return head("Vérification de l’e-mail")+`<div class="card"><p class="mu">Un code a été envoyé à ${esc(pend?.em||"votre adresse e-mail")}. Saisissez-le ci-dessous.</p><label for="cd">Code reçu par e-mail</label><input id="cd" inputmode="numeric" autocomplete="one-time-code"><button class="btn w" onclick="verif()">Valider le code</button>${M(msg,msg.startsWith("Un nouveau"))}<button class="lk" onclick="resend()">Renvoyer le code</button></div>`;
   if(r==="oubli")return head("Mot de passe oublié")+`<div class="card"><label for="em">E-mail du compte</label><input id="em" type="email" autocomplete="email"><button class="btn w" onclick="forgot()">Envoyer le lien</button>${M(msg,msg.startsWith("Si ")||msg.startsWith("Un e"))}<button class="lk" onclick="go('connexion')">Retour à la connexion</button></div>`;
   return head("Connexion")+`<div class="card"><label for="em">E-mail</label><input id="em" type="email" autocomplete="email"><label for="pw">Mot de passe</label><input id="pw" type="password" autocomplete="current-password">
 <button class="btn w" onclick="login()">Se connecter</button>${M(msg,msg.startsWith("Compte"))}<button class="lk" onclick="go('oubli')">Mot de passe oublié ?</button><br><button class="lk" onclick="go('inscription')">Créer un compte</button></div>`}
@@ -88,9 +90,8 @@ async function signup(){
   const f={fn:v("fn"),ln:v("ln"),em:v("em"),pw:v("pw"),lb:v("lb"),jc:v("jc"),rl:v("rl")};
   const r=await SB.auth.signUp({email:f.em,password:f.pw,options:{data:{first_name:f.fn,last_name:f.ln}}});
   if(r.error){msg="Inscription impossible : "+r.error.message;return render2()}
-  if(!r.data.session){msg="Compte créé. Confirmez votre e-mail puis connectez-vous.";return render2()}
-  const x=c?await SB.rpc("create_laboratory",{lab_name:f.lb}):await SB.rpc("join_laboratory",{code:f.jc,wanted:f.rl});
-  msg=x.error?x.error.message:"";boot()}
+  if(!r.data.session){pend={c,...f};try{sessionStorage.setItem("mv_pend",JSON.stringify(pend))}catch(e){}go("verification");return}
+  await finish({c,...f})}
 function render2(){const keep=["fn","ln","em","pw","mode","rl","jc","lb"].map(i=>[i,v(i)]);render();keep.forEach(([i,x])=>{const e=document.getElementById(i);if(e)e.value=x});if(document.getElementById("mode"))tg()}
 async function forgot(){if(!v("em")){msg="Saisissez votre e-mail.";return render()}
   const r=await SB.auth.resetPasswordForEmail(v("em"),{redirectTo:location.origin+location.pathname});
@@ -112,19 +113,19 @@ function appView(){const adm=P.role==="lab_admin",sup=adm||P.role==="supervisor"
   ({dash:dashV,new:newV,list:listV,team:teamV}[tab])()}
 function newV(){if(P.role!=="delegate"){$("#t").innerHTML=`<div class="card">Seuls les délégués créent des visites. Pour tester, rejoignez ce laboratoire avec un second compte.</div>`;return}
 $("#t").innerHTML=`<h2>Rapport de visite</h2><p class="sub">Renseignez les informations de votre visite</p><div class="card"><label for="d">Date</label><input id="d" type="date" value="${new Date().toISOString().slice(0,10)}">
-<label for="pro">Professionnel de santé</label><input id="pro"><label for="fo">Fonction</label><select id="fo">${FUNCS.map(x=>`<option>${x}</option>`).join("")}</select>
-<label for="et">Établissement</label><input id="et"><label for="ty">Type</label><select id="ty">${KINDS.map(x=>`<option>${x}</option>`).join("")}</select>
+<label for="pro">Professionnel de santé</label><input id="pro"><label>Fonction (une ou plusieurs)</label>${chk("fo",FUNCS)}
+<label for="et">Établissement</label><input id="et"><label>Type d’établissement (un ou plusieurs)</label>${chk("ty",KINDS)}
 <label for="ci">Ville</label><input id="ci"><label for="ob">Objet de la visite</label><input id="ob"><label for="pd">Produits présentés (séparés par des virgules)</label><input id="pd">
 <label for="re">Résultat et observations</label><textarea id="re" rows="3"></textarea><label for="na">Prochaine action</label><input id="na">
 <label for="ph">Photo du cachet ou justificatif</label><label class="ph" for="ph"><span id="pt">📷 Prendre une photo</span></label><input id="ph" type="file" accept="image/png,image/jpeg" capture="environment" hidden onchange="document.getElementById('pt').textContent='✓ '+this.files[0].name"><p class="mu">2 Mo maximum, PNG ou JPG. Aucune donnée de patient. Une photo seule ne prouve pas qu’une visite a eu lieu.</p>
 <button class="btn s" onclick="saveV('draft')">Enregistrer le brouillon</button><button class="btn" onclick="saveV('submitted')">Soumettre</button><div id="r"></div></div>`}
-async function saveV(st){const r=$("#r");if(!v("pro")||!v("et")){r.innerHTML=M("Indiquez le professionnel et l’établissement.");return}
+async function saveV(st){const r=$("#r");if(!v("pro")||!v("et")||!pick("fo")||!pick("ty")){r.innerHTML=M("Indiquez le professionnel, sa fonction, l’établissement et son type.");return}
   let e=await SB.from("establishments").select("id").eq("lab_id",P.lab_id).ilike("name",v("et")).limit(1);
   let eid=e.data?.[0]?.id;
-  if(!eid){const n=await SB.from("establishments").insert({lab_id:P.lab_id,name:v("et"),kind:v("ty"),city:v("ci")||null}).select("id").single();if(n.error){r.innerHTML=M(n.error.message);return}eid=n.data.id}
+  if(!eid){const n=await SB.from("establishments").insert({lab_id:P.lab_id,name:v("et"),kind:pick("ty"),city:v("ci")||null}).select("id").single();if(n.error){r.innerHTML=M(n.error.message);return}eid=n.data.id}
   let p=await SB.from("professionals").select("id").eq("lab_id",P.lab_id).eq("establishment_id",eid).ilike("full_name",v("pro")).limit(1);
   let pid=p.data?.[0]?.id;
-  if(!pid){const n=await SB.from("professionals").insert({lab_id:P.lab_id,establishment_id:eid,full_name:v("pro"),function:v("fo")}).select("id").single();if(n.error){r.innerHTML=M(n.error.message);return}pid=n.data.id}
+  if(!pid){const n=await SB.from("professionals").insert({lab_id:P.lab_id,establishment_id:eid,full_name:v("pro"),function:pick("fo")}).select("id").single();if(n.error){r.innerHTML=M(n.error.message);return}pid=n.data.id}
   const x=await SB.from("visits").insert({lab_id:P.lab_id,delegate_id:U.id,visited_at:v("d")+"T09:00:00Z",establishment_id:eid,professional_id:pid,purpose:v("ob"),products:v("pd")?v("pd").split(",").map(s=>s.trim()):[],outcome:v("re"),next_action:v("na"),status:st}).select("id").single();
   if(x.error){r.innerHTML=M(x.error.message);return}
   const fl=document.getElementById("ph")?.files[0];
@@ -177,5 +178,15 @@ async function dashV(){$("#t").innerHTML="Chargement…";const sup=P.role!=="del
 ${sup?`<div class="card"><b>Visites par délégué</b>${hb(grp(a=>((a.profiles?.first_name||"")+" "+(a.profiles?.last_name||"")).trim()))}</div>`:""}
 <div class="card"><b>Par type d’établissement</b>${hb(grp(a=>a.establishments?.kind))}</div>
 <div class="card"><b>Par ville</b>${hb(grp(a=>a.establishments?.city))}</div><div class="card"><b>Établissements les plus visités</b>${hb(grp(a=>a.establishments?.name))}</div></div>`}
+try{pend=JSON.parse(sessionStorage.getItem("mv_pend")||"null")}catch(e){}
+async function finish(p){const x=p.c?await SB.rpc("create_laboratory",{lab_name:p.lb}):await SB.rpc("join_laboratory",{code:p.jc,wanted:p.rl});msg=x.error?x.error.message:"";boot()}
+async function verif(){const r=await SB.auth.verifyOtp({email:pend?.em,token:v("cd"),type:"signup"});
+  if(r.error){msg="Code invalide ou expiré : "+r.error.message;return render()}
+  try{sessionStorage.removeItem("mv_pend")}catch(e){}const p=pend;pend=null;location.hash="";await finish(p)}
+async function resend(){const r=await SB.auth.resend({type:"signup",email:pend?.em});msg=r.error?"Envoi impossible : "+r.error.message:"Un nouveau code vient d’être envoyé.";render()}
+const chk=(id,list)=>`<div class="ck" id="${id}"><label class="ci"><input type="checkbox" onchange="allTog('${id}',this.checked)"><b>Tout sélectionner</b></label>${list.map(x=>`<label class="ci"><input type="checkbox" value="${x}" onchange="syncAll('${id}')">${x}</label>`).join("")}</div>`;
+const pick=id=>[...document.querySelectorAll("#"+id+" input[value]:checked")].map(i=>i.value).join(", ");
+function allTog(id,c){document.querySelectorAll("#"+id+" input[value]").forEach(i=>i.checked=c)}
+function syncAll(id){const a=[...document.querySelectorAll("#"+id+" input[value]")];document.querySelector("#"+id+" input:not([value])").checked=a.every(i=>i.checked)}
 boot();
 </script></body></html>
