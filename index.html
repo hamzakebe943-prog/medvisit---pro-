@@ -6,68 +6,117 @@
 <style>
 :root{--bg:#f4f7fa;--card:#fff;--tx:#12263f;--mu:#5d6f85;--navy:#0f2a4a;--gr:#1f9d6b;--bd:#d9e2ec;--rd:#c0392b}
 @media(prefers-color-scheme:dark){:root{--bg:#0b1624;--card:#122338;--tx:#e6edf5;--mu:#93a4b8;--bd:#24384f}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
-header{background:var(--navy);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px}
-header b{font-size:18px}header button{background:none;border:1px solid #6b86a6;color:#fff;border-radius:8px;padding:6px 10px;font:inherit}
-main{max-width:760px;margin:0 auto;padding:16px}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:12px}
-input,select,textarea{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:10px;width:100%;margin-bottom:8px}
-label{display:block;font-size:14px;font-weight:600;margin-top:6px}
-.btn{background:var(--gr);color:#fff;border:0;border-radius:8px;padding:11px 16px;font:inherit;font-weight:600;margin:4px 4px 4px 0}
-.btn.s{background:var(--card);color:var(--tx);border:1px solid var(--bd)}.btn.r{background:var(--rd)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+header{background:var(--navy);color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px}
+header button{background:none;border:1px solid #6b86a6;color:#fff;border-radius:8px;padding:5px 10px;font:inherit;font-size:13px}
+main{max-width:520px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:12px}
+h2{font-size:18px;margin:0 0 4px}.sub{color:var(--mu);font-size:13px;margin:0 0 10px}
+input,select,textarea{font:inherit;font-size:16px;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;width:100%;margin-bottom:6px}
+label{display:block;font-size:13px;font-weight:600;margin-top:6px}
+.btn{background:var(--gr);color:#fff;border:0;border-radius:8px;padding:9px 14px;font:inherit;font-weight:600;margin:4px 4px 4px 0}
+.btn.w{width:100%;margin:8px 0 4px}.btn.s{background:var(--card);color:var(--tx);border:1px solid var(--bd)}
+.lk{background:none;border:0;color:var(--gr);font:inherit;font-size:14px;text-decoration:underline;padding:6px 0;cursor:pointer}
 .tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}.tabs .btn{margin:0}
-.mu{color:var(--mu);font-size:14px}.err{color:var(--rd);font-weight:600}.ok{color:var(--gr);font-weight:600}
+.mu{color:var(--mu);font-size:13px}.err{color:var(--rd);font-weight:600;font-size:14px}.ok{color:var(--gr);font-weight:600;font-size:14px}
 .tag{padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600;color:#fff;background:#6b7c93}
 .tag.validated{background:var(--gr)}.tag.submitted{background:#2b6cb0}.tag.to_fix{background:#b7791f}
+.hd{text-align:center;margin:8px 0 14px}.hd svg{width:56px;height:56px}.hd h1{font-size:20px;margin:6px 0 0}
+.kp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}.kp .card{margin:0;padding:12px}.k{font-size:24px;font-weight:700}
+.bar{height:8px;background:var(--bd);border-radius:6px;overflow:hidden}.bar i{display:block;height:100%;background:#3b6fd9;border-radius:6px}
+.vb{display:flex;align-items:flex-end;justify-content:space-between;gap:6px;height:130px}.vb div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}.vb i{width:60%;background:#3b6fd9;border-radius:5px 5px 0 0;min-height:2px}
+.lg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--mu)}.lg b{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px}
+.kp .c1{background:linear-gradient(135deg,#0f2a4a,#2f5d9e)}.kp .c2{background:linear-gradient(135deg,#17805a,#2fb987)}.kp .c3{background:linear-gradient(135deg,#2f5fd0,#5a8df0)}.kp .c4{background:linear-gradient(135deg,#6b3fb5,#9a6fe0)}
+.kp .c1,.kp .c2,.kp .c3,.kp .c4{color:#fff;border:0}.kp .c1 .mu,.kp .c2 .mu,.kp .c3 .mu,.kp .c4 .mu{color:#e3ecf8}
+@media(min-width:900px){main{max-width:980px}.kp{grid-template-columns:repeat(4,1fr)}.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.g2 .card{margin:0}}
+.ph{display:flex;align-items:center;justify-content:center;border:2px dashed var(--gr);border-radius:10px;padding:22px;color:var(--gr);font-weight:600;cursor:pointer;margin-top:4px}
+.dn{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.al{border-color:#d69e2e}
 :focus-visible{outline:3px solid #4aa3ff;outline-offset:2px}
 </style></head><body>
-<header><b>MedVisit Pro</b><span id="who"></span></header>
+<header><span class="brand" id="br"></span><span id="who"></span></header>
 <main id="m">Chargement…</main>
 <script>
+const APP="MedVisit Pro";
+const LOGO=(s)=>`<svg width="${s}" height="${s}" viewBox="0 0 32 32" role="img" aria-label="Logo ${APP}"><rect width="32" height="32" rx="8" fill="#1f9d6b"/><path d="M16 6.5v19M6.5 16h19" stroke="#fff" stroke-width="4" stroke-linecap="round"/><circle cx="24.5" cy="7.5" r="3.2" fill="#0f2a4a" stroke="#fff" stroke-width="1.4"/></svg>`;
 const SB=supabase.createClient("https://daibigynbynhwmgwdevo.supabase.co","sb_publishable_u6XgsnKd5hQInDJIkGG3yQ_o4ha_uDh");
 const ST={draft:"Brouillon",submitted:"Soumis",validated:"Validé",to_fix:"À corriger"};
-const RL={lab_admin:"Administrateur",supervisor:"Superviseur",delegate:"Délégué",super_admin:"Super admin"};
+const RL={lab_admin:"Administrateur",supervisor:"Superviseur",delegate:"Délégué médical",super_admin:"Super admin"};
 const KINDS=["Pharmacie","Hôpital","Clinique","Centre de santé","Poste de santé","Cabinet médical","Autre"];
 const FUNCS=["Médecin","Pharmacien","Sage-femme","Infirmier","Responsable de structure","Autre"];
-let U=null,P=null,L=null,tab="new",msg="";
-const $=s=>document.querySelector(s),v=id=>document.getElementById(id).value.trim();
+let U=null,P=null,L=null,tab="dash",per=30,msg="",recovery=false;
+const $=s=>document.querySelector(s),v=id=>document.getElementById(id)?.value.trim()||"";
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const M=(t,ok)=>`<p class="${ok?"ok":"err"}" role="status">${esc(t)}</p>`;
+const M=(t,ok)=>t?`<p class="${ok?"ok":"err"}" role="status">${esc(t)}</p>`:"";
+const route=()=>location.hash.replace("#","")||"connexion";
+const go=r=>{msg="";location.hash=r;};
+window.addEventListener("hashchange",()=>{if(!U)render()});
+document.getElementById("br").innerHTML=LOGO(26)+APP;
 async function boot(){
   const{data}=await SB.auth.getSession();U=data.session?.user||null;P=L=null;
   if(U){const r=await SB.from("profiles").select("*").eq("id",U.id).single();P=r.data;
     if(P?.lab_id){const l=await SB.from("laboratories").select("*").eq("id",P.lab_id).single();L=l.data}}
   $("#who").innerHTML=U?`<button onclick="out()">Se déconnecter</button>`:"";
   render()}
-async function out(){await SB.auth.signOut();msg="";boot()}
+async function out(){await SB.auth.signOut();msg="";location.hash="connexion";boot()}
 function render(){const m=$("#m");
+  if(recovery)return m.innerHTML=newPwView();
   if(!U)return m.innerHTML=authView();
   if(!P?.lab_id)return m.innerHTML=joinView();
-  if(!P.approved)return m.innerHTML=`<div class="card"><h2>En attente de validation</h2><p>Votre administrateur doit approuver votre compte pour le laboratoire ${esc(L?.name||"")}. Revenez plus tard.</p><button class="btn s" onclick="boot()">Actualiser</button></div>`;
+  if(!P.approved)return m.innerHTML=`<div class="card"><h2>En attente de validation</h2><p>L’administrateur du laboratoire ${esc(L?.name||"")} doit approuver votre compte${P.requested_role==="supervisor"?" (fonction demandée : superviseur)":""}. Revenez plus tard.</p><button class="btn s" onclick="boot()">Actualiser</button></div>`;
   appView()}
-function authView(){return `<div class="card"><h2>Connexion</h2><label for="em">E-mail</label><input id="em" type="email" autocomplete="email"><label for="pw">Mot de passe (8 caractères minimum)</label><input id="pw" type="password" autocomplete="current-password">
-<button class="btn" onclick="login()">Se connecter</button></div>
-<div class="card"><h2>Créer un compte</h2><label for="fn">Prénom</label><input id="fn"><label for="ln">Nom</label><input id="ln"><p class="mu">Utilisez l’e-mail et le mot de passe saisis ci-dessus.</p><button class="btn s" onclick="signup()">Créer mon compte</button></div>${msg?M(msg):""}`}
+const head=t=>`<div class="hd">${LOGO(56)}<h1>${APP}</h1><p class="sub">${t}</p></div>`;
+function authView(){const r=route();
+  if(r==="inscription")return head("Créer un compte")+`<div class="card">
+<label for="fn">Prénom</label><input id="fn" autocomplete="given-name"><label for="ln">Nom</label><input id="ln" autocomplete="family-name">
+<label for="em">E-mail</label><input id="em" type="email" autocomplete="email"><label for="pw">Mot de passe (8 caractères minimum)</label><input id="pw" type="password" autocomplete="new-password">
+<label for="mode">Je suis</label><select id="mode" onchange="tg()"><option value="join">Délégué médical ou superviseur</option><option value="create">Responsable : je crée mon laboratoire</option></select>
+<div id="bj"><label for="rl">Fonction</label><select id="rl"><option value="delegate">Délégué médical</option><option value="supervisor">Superviseur</option></select>
+<label for="jc">Code d’invitation du laboratoire</label><input id="jc" autocapitalize="off"><p class="mu">Votre fonction et votre rattachement seront validés par l’administrateur du laboratoire.</p></div>
+<div id="bc" style="display:none"><label for="lb">Nom du laboratoire</label><input id="lb"><p class="mu">Vous en deviendrez l’administrateur.</p></div>
+<button class="btn w" onclick="signup()">Créer mon compte</button>${M(msg)}<button class="lk" onclick="go('connexion')">J’ai déjà un compte</button></div>`;
+  if(r==="oubli")return head("Mot de passe oublié")+`<div class="card"><label for="em">E-mail du compte</label><input id="em" type="email" autocomplete="email"><button class="btn w" onclick="forgot()">Envoyer le lien</button>${M(msg,msg.startsWith("Si ")||msg.startsWith("Un e"))}<button class="lk" onclick="go('connexion')">Retour à la connexion</button></div>`;
+  return head("Connexion")+`<div class="card"><label for="em">E-mail</label><input id="em" type="email" autocomplete="email"><label for="pw">Mot de passe</label><input id="pw" type="password" autocomplete="current-password">
+<button class="btn w" onclick="login()">Se connecter</button>${M(msg,msg.startsWith("Compte"))}<button class="lk" onclick="go('oubli')">Mot de passe oublié ?</button><br><button class="lk" onclick="go('inscription')">Créer un compte</button></div>`}
+function tg(){const c=v("mode")==="create";$("#bc").style.display=c?"":"none";$("#bj").style.display=c?"none":""}
 async function login(){const r=await SB.auth.signInWithPassword({email:v("em"),password:v("pw")});if(r.error){msg="Connexion impossible : "+r.error.message;return render()}msg="";boot()}
-async function signup(){const r=await SB.auth.signUp({email:v("em"),password:v("pw"),options:{data:{first_name:v("fn"),last_name:v("ln")}}});
-  if(r.error){msg="Inscription impossible : "+r.error.message;return render()}
-  if(!r.data.session){msg="Compte créé. Confirmez votre e-mail puis connectez-vous.";return render()}boot()}
-function joinView(){return `<div class="card"><h2>Votre laboratoire</h2><p>Bonjour ${esc(P?.first_name||"")}. Créez l’espace de votre laboratoire ou rejoignez-en un avec le code reçu.</p>
-<label for="ln2">Nom du laboratoire</label><input id="ln2"><button class="btn" onclick="mkLab()">Créer le laboratoire</button><hr>
-<label for="jc">Code d’invitation</label><input id="jc" autocapitalize="off"><button class="btn s" onclick="joinLab()">Rejoindre</button>${msg?M(msg):""}</div>`}
+async function signup(){
+  const c=v("mode")==="create";
+  if(!v("fn")||!v("ln")||!v("em")||v("pw").length<8){msg="Renseignez prénom, nom, e-mail et un mot de passe de 8 caractères minimum.";return render2()}
+  if(c&&!v("lb")){msg="Indiquez le nom du laboratoire.";return render2()}
+  if(!c&&!v("jc")){msg="Indiquez le code d’invitation reçu de votre laboratoire.";return render2()}
+  const f={fn:v("fn"),ln:v("ln"),em:v("em"),pw:v("pw"),lb:v("lb"),jc:v("jc"),rl:v("rl")};
+  const r=await SB.auth.signUp({email:f.em,password:f.pw,options:{data:{first_name:f.fn,last_name:f.ln}}});
+  if(r.error){msg="Inscription impossible : "+r.error.message;return render2()}
+  if(!r.data.session){msg="Compte créé. Confirmez votre e-mail puis connectez-vous.";return render2()}
+  const x=c?await SB.rpc("create_laboratory",{lab_name:f.lb}):await SB.rpc("join_laboratory",{code:f.jc,wanted:f.rl});
+  msg=x.error?x.error.message:"";boot()}
+function render2(){const keep=["fn","ln","em","pw","mode","rl","jc","lb"].map(i=>[i,v(i)]);render();keep.forEach(([i,x])=>{const e=document.getElementById(i);if(e)e.value=x});if(document.getElementById("mode"))tg()}
+async function forgot(){if(!v("em")){msg="Saisissez votre e-mail.";return render()}
+  const r=await SB.auth.resetPasswordForEmail(v("em"),{redirectTo:location.origin+location.pathname});
+  msg=r.error?"Envoi impossible : "+r.error.message:"Si ce compte existe, un e-mail avec un lien de réinitialisation vient d’être envoyé.";render()}
+SB.auth.onAuthStateChange((e)=>{if(e==="PASSWORD_RECOVERY"){recovery=true;render()}});
+function newPwView(){return head("Nouveau mot de passe")+`<div class="card"><label for="np">Nouveau mot de passe (8 caractères minimum)</label><input id="np" type="password" autocomplete="new-password"><button class="btn w" onclick="setPw()">Enregistrer</button>${M(msg)}</div>`}
+async function setPw(){if(v("np").length<8){msg="8 caractères minimum.";return render()}
+  const r=await SB.auth.updateUser({password:v("np")});if(r.error){msg=r.error.message;return render()}
+  recovery=false;msg="";location.hash="";boot()}
+function joinView(){return head("Votre laboratoire")+`<div class="card"><p>Bonjour ${esc(P?.first_name||"")}. Créez l’espace de votre laboratoire ou rejoignez-en un.</p>
+<label for="ln2">Nom du laboratoire</label><input id="ln2"><button class="btn w" onclick="mkLab()">Créer le laboratoire</button><hr>
+<label for="rl">Fonction</label><select id="rl"><option value="delegate">Délégué médical</option><option value="supervisor">Superviseur</option></select>
+<label for="jc">Code d’invitation</label><input id="jc" autocapitalize="off"><button class="btn w s" onclick="joinLab()">Rejoindre</button>${M(msg)}</div>`}
 async function mkLab(){const r=await SB.rpc("create_laboratory",{lab_name:v("ln2")});msg=r.error?r.error.message:"";boot()}
-async function joinLab(){const r=await SB.rpc("join_laboratory",{code:v("jc")});msg=r.error?r.error.message:"";boot()}
+async function joinLab(){const r=await SB.rpc("join_laboratory",{code:v("jc"),wanted:v("rl")});msg=r.error?r.error.message:"";boot()}
 function appView(){const adm=P.role==="lab_admin",sup=adm||P.role==="supervisor";
-  const T=[["new","Nouvelle visite"],["list",sup?"Rapports":"Mes visites"]].concat(adm?[["team","Équipe"]]:[]);
+  const T=[["dash","Tableau de bord"],["new","Nouvelle visite"],["list",sup?"Rapports":"Mes visites"]].concat(adm?[["team","Équipe"]]:[]);
   $("#m").innerHTML=`<p class="mu">${esc(L.name)} · ${RL[P.role]}</p><div class="tabs">${T.map(([k,l])=>`<button class="btn ${k===tab?"":"s"}" onclick="tab='${k}';appView()">${l}</button>`).join("")}</div><div id="t"></div>`;
-  ({new:newV,list:listV,team:teamV}[tab])()}
-function newV(){if(P.role!=="delegate"){$("#t").innerHTML=`<div class="card">Seuls les délégués créent des visites. Pour tester, créez un second compte et rejoignez le laboratoire avec le code (onglet Équipe).</div>`;return}
-$("#t").innerHTML=`<div class="card"><label for="d">Date</label><input id="d" type="date" value="${new Date().toISOString().slice(0,10)}">
+  ({dash:dashV,new:newV,list:listV,team:teamV}[tab])()}
+function newV(){if(P.role!=="delegate"){$("#t").innerHTML=`<div class="card">Seuls les délégués créent des visites. Pour tester, rejoignez ce laboratoire avec un second compte.</div>`;return}
+$("#t").innerHTML=`<h2>Rapport de visite</h2><p class="sub">Renseignez les informations de votre visite</p><div class="card"><label for="d">Date</label><input id="d" type="date" value="${new Date().toISOString().slice(0,10)}">
 <label for="pro">Professionnel de santé</label><input id="pro"><label for="fo">Fonction</label><select id="fo">${FUNCS.map(x=>`<option>${x}</option>`).join("")}</select>
 <label for="et">Établissement</label><input id="et"><label for="ty">Type</label><select id="ty">${KINDS.map(x=>`<option>${x}</option>`).join("")}</select>
 <label for="ci">Ville</label><input id="ci"><label for="ob">Objet de la visite</label><input id="ob"><label for="pd">Produits présentés (séparés par des virgules)</label><input id="pd">
 <label for="re">Résultat et observations</label><textarea id="re" rows="3"></textarea><label for="na">Prochaine action</label><input id="na">
-<p class="mu">Aucune donnée de patient. Les photos ne sont pas encore disponibles.</p>
+<label for="ph">Photo du cachet ou justificatif</label><label class="ph" for="ph"><span id="pt">📷 Prendre une photo</span></label><input id="ph" type="file" accept="image/png,image/jpeg" capture="environment" hidden onchange="document.getElementById('pt').textContent='✓ '+this.files[0].name"><p class="mu">2 Mo maximum, PNG ou JPG. Aucune donnée de patient. Une photo seule ne prouve pas qu’une visite a eu lieu.</p>
 <button class="btn s" onclick="saveV('draft')">Enregistrer le brouillon</button><button class="btn" onclick="saveV('submitted')">Soumettre</button><div id="r"></div></div>`}
 async function saveV(st){const r=$("#r");if(!v("pro")||!v("et")){r.innerHTML=M("Indiquez le professionnel et l’établissement.");return}
   let e=await SB.from("establishments").select("id").eq("lab_id",P.lab_id).ilike("name",v("et")).limit(1);
@@ -76,21 +125,57 @@ async function saveV(st){const r=$("#r");if(!v("pro")||!v("et")){r.innerHTML=M("
   let p=await SB.from("professionals").select("id").eq("lab_id",P.lab_id).eq("establishment_id",eid).ilike("full_name",v("pro")).limit(1);
   let pid=p.data?.[0]?.id;
   if(!pid){const n=await SB.from("professionals").insert({lab_id:P.lab_id,establishment_id:eid,full_name:v("pro"),function:v("fo")}).select("id").single();if(n.error){r.innerHTML=M(n.error.message);return}pid=n.data.id}
-  const x=await SB.from("visits").insert({lab_id:P.lab_id,delegate_id:U.id,visited_at:v("d")+"T09:00:00Z",establishment_id:eid,professional_id:pid,purpose:v("ob"),products:v("pd")?v("pd").split(",").map(s=>s.trim()):[],outcome:v("re"),next_action:v("na"),status:st});
-  if(x.error){r.innerHTML=M(x.error.message);return}tab="list";appView()}
+  const x=await SB.from("visits").insert({lab_id:P.lab_id,delegate_id:U.id,visited_at:v("d")+"T09:00:00Z",establishment_id:eid,professional_id:pid,purpose:v("ob"),products:v("pd")?v("pd").split(",").map(s=>s.trim()):[],outcome:v("re"),next_action:v("na"),status:st}).select("id").single();
+  if(x.error){r.innerHTML=M(x.error.message);return}
+  const fl=document.getElementById("ph")?.files[0];
+  if(fl){const b=await shrink(fl);if(!b||b.size>2e6){r.innerHTML=M("Visite enregistrée, mais la photo est illisible ou dépasse 2 Mo.");return}
+    const path=P.lab_id+"/"+x.data.id+"/"+Date.now()+".jpg";
+    const u=await SB.storage.from("visit-photos").upload(path,b,{contentType:"image/jpeg"});
+    if(u.error){r.innerHTML=M("Visite enregistrée, mais la photo n’a pas pu être envoyée : "+u.error.message);return}
+    await SB.from("visit_files").insert({lab_id:P.lab_id,visit_id:x.data.id,storage_path:path,size_bytes:b.size})}
+  tab="list";appView()}
+function shrink(f){return new Promise(ok=>{const i=new Image();i.onload=()=>{const s=Math.min(1,1280/Math.max(i.width,i.height)),c=document.createElement("canvas");c.width=i.width*s;c.height=i.height*s;c.getContext("2d").drawImage(i,0,0,c.width,c.height);c.toBlob(b=>ok(b),"image/jpeg",.8)};i.onerror=()=>ok(null);i.src=URL.createObjectURL(f)})}
+async function photo(id,path){const e=document.getElementById("p_"+id);const r=await SB.storage.from("visit-photos").createSignedUrl(path,120);
+  e.innerHTML=r.error?M(r.error.message):`<img src="${r.data.signedUrl}" alt="Justificatif de la visite" style="max-width:100%;border-radius:8px;margin-top:6px">`}
 async function listV(){$("#t").innerHTML="Chargement…";
-  const r=await SB.from("visits").select("id,visited_at,status,delegate_id,establishments(name,city),professionals(full_name,function),profiles(first_name,last_name)").order("visited_at",{ascending:false});
+  const r=await SB.from("visits").select("id,visited_at,status,delegate_id,establishments(name,city),professionals(full_name,function),profiles(first_name,last_name),visit_files(storage_path)").order("visited_at",{ascending:false});
   if(r.error){$("#t").innerHTML=M(r.error.message);return}
   const sup=P.role!=="delegate";
-  $("#t").innerHTML=(r.data.map(a=>`<div class="card"><b>${esc(a.professionals?.full_name)}</b> <span class="mu">${esc(a.professionals?.function)}</span><br>${esc(a.establishments?.name)} ${esc(a.establishments?.city||"")}<br><span class="mu">${a.visited_at.slice(0,10)}${sup?" · "+esc((a.profiles?.first_name||"")+" "+(a.profiles?.last_name||"")):""}</span> <span class="tag ${a.status}">${ST[a.status]}</span><br>
+  $("#t").innerHTML=(r.data.map(a=>`<div class="card"><b>${esc(a.professionals?.full_name)}</b> <span class="mu">${esc(a.professionals?.function)}</span><br>${esc(a.establishments?.name)} ${esc(a.establishments?.city||"")}<br><span class="mu">${a.visited_at.slice(0,10)}${sup?" · "+esc((a.profiles?.first_name||"")+" "+(a.profiles?.last_name||"")):""}</span> <span class="tag ${a.status}">${ST[a.status]}</span> ${a.visit_files?.length?`<button class="lk" onclick="photo('${a.id}','${esc(a.visit_files[0].storage_path)}')">Voir la photo</button>`:""}<div id="p_${a.id}"></div>
 ${sup&&a.status==="submitted"?`<button class="btn" onclick="setS('${a.id}','validated')">Valider</button><button class="btn s" onclick="setS('${a.id}','to_fix')">Renvoyer</button>`:""}
 ${!sup&&["draft","to_fix"].includes(a.status)?`<button class="btn" onclick="setS('${a.id}','submitted')">Soumettre</button>`:""}</div>`).join("")||`<div class="card">Aucune visite pour l’instant.</div>`)+`<div id="r"></div>`}
 async function setS(id,s){const r=await SB.from("visits").update({status:s}).eq("id",id);if(r.error){$("#r").innerHTML=M(r.error.message);return}listV()}
-async function teamV(){const r=await SB.from("profiles").select("id,first_name,last_name,role,approved").eq("lab_id",P.lab_id);
-  $("#t").innerHTML=`<div class="card"><b>Code d’invitation : ${esc(L.join_code)}</b><p class="mu">Donnez-le à vos délégués. Ils devront ensuite être approuvés ici.</p></div>`+
-  (r.data||[]).map(u=>`<div class="card">${esc(u.first_name||"")} ${esc(u.last_name||"")} <span class="mu">${u.approved?"actif":"en attente"}</span><br>
-${u.id===U.id?`<span class="mu">${RL[u.role]} (vous)</span>`:`<select onchange="setRole('${u.id}',this.value)">${["delegate","supervisor","lab_admin"].map(k=>`<option value="${k}" ${u.role===k?"selected":""}>${RL[k]}</option>`).join("")}</select>${u.approved?"":`<button class="btn" onclick="appr('${u.id}')">Approuver</button>`}`}</div>`).join("")+`<div id="r"></div>`}
-async function appr(id){await SB.from("profiles").update({approved:true}).eq("id",id);teamV()}
+async function teamV(){const r=await SB.from("profiles").select("id,first_name,last_name,role,requested_role,approved").eq("lab_id",P.lab_id);
+  $("#t").innerHTML=`<div class="card"><b>Code d’invitation : ${esc(L.join_code)}</b><p class="mu">Donnez-le à vos délégués et superviseurs. Ils devront ensuite être approuvés ici.</p></div>`+
+  (r.data||[]).map(u=>`<div class="card">${esc(u.first_name||"")} ${esc(u.last_name||"")} <span class="mu">${u.approved?"actif":"en attente"}</span>${!u.approved&&u.requested_role?`<br><span class="mu">Fonction demandée : ${RL[u.requested_role]}</span>`:""}<br>
+${u.id===U.id?`<span class="mu">${RL[u.role]} (vous)</span>`:`<select id="r_${u.id}" onchange="setRole('${u.id}',this.value)">${["delegate","supervisor","lab_admin"].map(k=>`<option value="${k}" ${(u.approved?u.role:u.requested_role||u.role)===k?"selected":""}>${RL[k]}</option>`).join("")}</select>${u.approved?"":`<button class="btn" onclick="appr('${u.id}')">Approuver</button>`}`}</div>`).join("")+`<div id="r"></div>`}
+async function appr(id){const role=document.getElementById("r_"+id).value;const r=await SB.from("profiles").update({approved:true,role}).eq("id",id);if(r.error){$("#r").innerHTML=M(r.error.message);return}teamV()}
 async function setRole(id,role){const r=await SB.from("profiles").update({role}).eq("id",id);if(r.error)$("#r").innerHTML=M(r.error.message)}
-SB.auth.onAuthStateChange(()=>{});boot();
+function donut(p){const t=p.reduce((a,x)=>a+x[1],0),C=2*Math.PI*40;let o=0;
+  return `<svg viewBox="0 0 100 100" width="120" height="120" role="img" aria-label="Répartition par statut"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--bd)" stroke-width="14"/>${p.filter(x=>x[1]).map(x=>{const l=x[1]/t*C,s=`<circle cx="50" cy="50" r="40" fill="none" stroke="${x[2]}" stroke-width="14" stroke-dasharray="${l} ${C-l}" stroke-dashoffset="${-o}" transform="rotate(-90 50 50)"/>`;o+=l;return s}).join("")}<text x="50" y="52" text-anchor="middle" font-size="20" font-weight="700" fill="var(--tx)">${t}</text><text x="50" y="64" text-anchor="middle" font-size="7" fill="var(--mu)">visites</text></svg>`}
+const hb=rows=>{const m=Math.max(1,...rows.map(r=>r[1]));return rows.map(([l,n])=>`<div style="margin:7px 0"><div style="display:flex;justify-content:space-between" class="mu"><span>${esc(l)}</span><b>${n}</b></div><div class="bar"><i style="width:${n/m*100}%"></i></div></div>`).join("")||`<p class="mu">Aucune donnée.</p>`};
+const vb=rows=>{const m=Math.max(1,...rows.map(r=>r[1]));return `<div class="vb">${rows.map(([l,n])=>`<div><span class="mu">${n}</span><i style="height:${n/m*85}px"></i><span class="mu">${l}</span></div>`).join("")}</div>`};
+async function dashV(){$("#t").innerHTML="Chargement…";const sup=P.role!=="delegate";
+  const r=await SB.from("visits").select("id,visited_at,status,delegate_id,establishments(name,city,kind),profiles(first_name,last_name)");
+  if(r.error){$("#t").innerHTML=M(r.error.message);return}
+  const cut=per?new Date(Date.now()-per*864e5).toISOString().slice(0,10):"";
+  const d=r.data.filter(a=>a.visited_at.slice(0,10)>=cut),n=d.length,cnt=s=>d.filter(a=>a.status===s).length;
+  const grp=f=>{const m={};d.forEach(a=>{const k=f(a)||"Non précisé";m[k]=(m[k]||0)+1});return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,6)};
+  const days=[...Array(7)].map((_,i)=>{const t=new Date(Date.now()-(6-i)*864e5),k=t.toISOString().slice(0,10);return[["D","L","M","M","J","V","S"][t.getDay()],r.data.filter(a=>a.visited_at.slice(0,10)===k).length]});
+  const mo=[...Array(6)].map((_,i)=>{const t=new Date();t.setDate(1);t.setMonth(t.getMonth()-(5-i));const k=t.toISOString().slice(0,7);return[["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc"][t.getMonth()],r.data.filter(a=>a.visited_at.slice(0,7)===k).length]});
+  let al="";
+  if(sup){const tm=await SB.from("profiles").select("id,first_name,last_name").eq("lab_id",P.lab_id).eq("approved",true).eq("role","delegate");
+    const wk=new Date(Date.now()-7*864e5).toISOString().slice(0,10),act=new Set(r.data.filter(a=>a.visited_at.slice(0,10)>=wk).map(a=>a.delegate_id));
+    const miss=(tm.data||[]).filter(u=>!act.has(u.id));
+    if(miss.length)al=`<div class="card al"><b>Rapports manquants</b><p class="mu" style="margin:4px 0 0">Aucune visite depuis 7 jours : ${miss.map(u=>esc((u.first_name||"")+" "+(u.last_name||""))).join(", ")}</p></div>`}
+  const parts=[["Brouillon",cnt("draft"),"#6b7c93"],["Soumis",cnt("submitted"),"#3b6fd9"],["Validé",cnt("validated"),"#1f9d6b"],["À corriger",cnt("to_fix"),"#d69e2e"]];
+  let ci=0;const kp=(l,x)=>`<div class="card c${(ci++%4)+1}"><div class="mu">${l}</div><div class="k">${x}</div></div>`;
+  $("#t").innerHTML=`<h2>${P.role==="lab_admin"?"Espace directeur":"Bonjour "+esc(P.first_name||"")+" 👋"}</h2><select id="pe" onchange="per=+this.value;dashV()" aria-label="Période">${[[7,"7 derniers jours"],[30,"30 derniers jours"],[90,"90 derniers jours"],[0,"Tout"]].map(([k,l])=>`<option value="${k}" ${per===k?"selected":""}>${l}</option>`).join("")}</select>${al}
+<div class="kp">${kp("Visites",n)}${sup?kp("À valider",cnt("submitted")):kp("Brouillons",cnt("draft"))}${kp("Validées",(n?Math.round(cnt("validated")/n*100):0)+" %")}${sup?kp("Délégués actifs",new Set(d.map(a=>a.delegate_id)).size):kp("À corriger",cnt("to_fix"))}</div>
+<div class="card"><b>Statut des rapports</b><div class="dn">${donut(parts)}<div class="lg" style="flex-direction:column">${parts.map(p=>`<span><b style="background:${p[2]}"></b>${p[0]} : ${p[1]}</span>`).join("")}</div></div></div>
+<div class="g2"><div class="card"><b>Visites des 7 derniers jours</b>${vb(days)}</div><div class="card"><b>Visites par mois</b>${vb(mo)}</div></div><div class="g2">
+${sup?`<div class="card"><b>Visites par délégué</b>${hb(grp(a=>((a.profiles?.first_name||"")+" "+(a.profiles?.last_name||"")).trim()))}</div>`:""}
+<div class="card"><b>Par type d’établissement</b>${hb(grp(a=>a.establishments?.kind))}</div>
+<div class="card"><b>Par ville</b>${hb(grp(a=>a.establishments?.city))}</div><div class="card"><b>Établissements les plus visités</b>${hb(grp(a=>a.establishments?.name))}</div></div>`}
+boot();
 </script></body></html>
