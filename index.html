@@ -45,7 +45,7 @@ const ST={draft:"Brouillon",submitted:"Soumis",validated:"Validé",to_fix:"À co
 const RL={lab_admin:"Administrateur",supervisor:"Superviseur",delegate:"Délégué médical",super_admin:"Super admin"};
 const KINDS=["Pharmacie","Hôpital","Clinique","Centre de santé","Poste de santé","Cabinet médical","Autre"];
 const FUNCS=["Médecin","Pharmacien","Sage-femme","Infirmier","Responsable de structure","Autre"];
-let U=null,P=null,L=null,tab="dash",per=30,msg="",recovery=false,pend=null;
+let U=null,P=null,L=null,tab="dash",per=30,msg="",recovery=false,pend=null,busy=false,pics=[],PH={};
 const $=s=>document.querySelector(s),v=id=>document.getElementById(id)?.value.trim()||"";
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const M=(t,ok)=>t?`<p class="${ok?"ok":"err"}" role="status">${esc(t)}</p>`:"";
@@ -111,15 +111,16 @@ function appView(){const adm=P.role==="lab_admin",sup=adm||P.role==="supervisor"
   const T=[["dash","Tableau de bord"],["new","Nouvelle visite"],["list",sup?"Rapports":"Mes visites"]].concat(adm?[["team","Équipe"]]:[]);
   $("#m").innerHTML=`<p class="mu">${esc(L.name)} · ${RL[P.role]}</p><div class="tabs">${T.map(([k,l])=>`<button class="btn ${k===tab?"":"s"}" onclick="tab='${k}';appView()">${l}</button>`).join("")}</div><div id="t"></div>`;
   ({dash:dashV,new:newV,list:listV,team:teamV}[tab])()}
-function newV(){if(P.role!=="delegate"){$("#t").innerHTML=`<div class="card">Seuls les délégués créent des visites. Pour tester, rejoignez ce laboratoire avec un second compte.</div>`;return}
+function newV(){pics=[];if(P.role!=="delegate"){$("#t").innerHTML=`<div class="card">Seuls les délégués créent des visites. Pour tester, rejoignez ce laboratoire avec un second compte.</div>`;return}
 $("#t").innerHTML=`<h2>Rapport de visite</h2><p class="sub">Renseignez les informations de votre visite</p><div class="card"><label for="d">Date</label><input id="d" type="date" value="${new Date().toISOString().slice(0,10)}">
 <label for="pro">Professionnel de santé</label><input id="pro"><label>Fonction (une ou plusieurs)</label>${chk("fo",FUNCS)}
 <label for="et">Établissement</label><input id="et"><label>Type d’établissement (un ou plusieurs)</label>${chk("ty",KINDS)}
 <label for="ci">Ville</label><input id="ci"><label for="ob">Objet de la visite</label><input id="ob"><label for="pd">Produits présentés (séparés par des virgules)</label><input id="pd">
 <label for="re">Résultat et observations</label><textarea id="re" rows="3"></textarea><label for="na">Prochaine action</label><input id="na">
-<label for="ph">Photo du cachet ou justificatif</label><label class="ph" for="ph"><span id="pt">📷 Prendre une photo</span></label><input id="ph" type="file" accept="image/png,image/jpeg" capture="environment" hidden onchange="document.getElementById('pt').textContent='✓ '+this.files[0].name"><p class="mu">2 Mo maximum, PNG ou JPG. Aucune donnée de patient. Une photo seule ne prouve pas qu’une visite a eu lieu.</p>
+<label for="ph">Photos du cachet ou justificatifs (recto, verso)</label><label class="ph" for="ph"><span>📷 Ajouter une page (photo)</span></label><input id="ph" type="file" accept="image/png,image/jpeg" capture="environment" hidden onchange="addPic(this)"><div id="pl"></div><p class="mu">Jusqu’à 5 pages (recto, verso, feuilles de signatures), 2 Mo maximum chacune, PNG ou JPG. Aucune donnée de patient. Une photo seule ne prouve pas qu’une visite a eu lieu.</p>
 <button class="btn s" onclick="saveV('draft')">Enregistrer le brouillon</button><button class="btn" onclick="saveV('submitted')">Soumettre</button><div id="r"></div></div>`}
-async function saveV(st){const r=$("#r");if(!v("pro")||!v("et")||!pick("fo")||!pick("ty")){r.innerHTML=M("Indiquez le professionnel, sa fonction, l’établissement et son type.");return}
+async function saveV(st){if(busy)return;busy=true;try{await saveV2(st)}finally{busy=false}}
+async function saveV2(st){const r=$("#r");if(!v("pro")||!v("et")||!pick("fo")||!pick("ty")){r.innerHTML=M("Indiquez le professionnel, sa fonction, l’établissement et son type.");return}
   let e=await SB.from("establishments").select("id").eq("lab_id",P.lab_id).ilike("name",v("et")).limit(1);
   let eid=e.data?.[0]?.id;
   if(!eid){const n=await SB.from("establishments").insert({lab_id:P.lab_id,name:v("et"),kind:pick("ty"),city:v("ci")||null}).select("id").single();if(n.error){r.innerHTML=M(n.error.message);return}eid=n.data.id}
@@ -128,23 +129,23 @@ async function saveV(st){const r=$("#r");if(!v("pro")||!v("et")||!pick("fo")||!p
   if(!pid){const n=await SB.from("professionals").insert({lab_id:P.lab_id,establishment_id:eid,full_name:v("pro"),function:pick("fo")}).select("id").single();if(n.error){r.innerHTML=M(n.error.message);return}pid=n.data.id}
   const x=await SB.from("visits").insert({lab_id:P.lab_id,delegate_id:U.id,visited_at:v("d")+"T09:00:00Z",establishment_id:eid,professional_id:pid,purpose:v("ob"),products:v("pd")?v("pd").split(",").map(s=>s.trim()):[],outcome:v("re"),next_action:v("na"),status:st}).select("id").single();
   if(x.error){r.innerHTML=M(x.error.message);return}
-  const fl=document.getElementById("ph")?.files[0];
-  if(fl){const b=await shrink(fl);if(!b||b.size>2e6){r.innerHTML=M("Visite enregistrée, mais la photo est illisible ou dépasse 2 Mo.");return}
-    const path=P.lab_id+"/"+x.data.id+"/"+Date.now()+".jpg";
+  for(let i=0;i<pics.length;i++){const b=await shrink(pics[i]);if(!b||b.size>2e6){r.innerHTML=M("Visite enregistrée, mais la page "+(i+1)+" est illisible ou dépasse 2 Mo.");return}
+    const path=P.lab_id+"/"+x.data.id+"/"+Date.now()+"_"+i+".jpg";
     const u=await SB.storage.from("visit-photos").upload(path,b,{contentType:"image/jpeg"});
-    if(u.error){r.innerHTML=M("Visite enregistrée, mais la photo n’a pas pu être envoyée : "+u.error.message);return}
+    if(u.error){r.innerHTML=M("Visite enregistrée, mais la page "+(i+1)+" n’a pas pu être envoyée : "+u.error.message);return}
     await SB.from("visit_files").insert({lab_id:P.lab_id,visit_id:x.data.id,storage_path:path,size_bytes:b.size})}
+  pics=[];
   tab="list";appView()}
-function shrink(f){return new Promise(ok=>{const i=new Image();i.onload=()=>{const s=Math.min(1,1280/Math.max(i.width,i.height)),c=document.createElement("canvas");c.width=i.width*s;c.height=i.height*s;c.getContext("2d").drawImage(i,0,0,c.width,c.height);c.toBlob(b=>ok(b),"image/jpeg",.8)};i.onerror=()=>ok(null);i.src=URL.createObjectURL(f)})}
+function shrink(f){return new Promise(ok=>{const i=new Image();i.onload=()=>{const s=Math.min(1,1600/Math.max(i.width,i.height)),c=document.createElement("canvas");c.width=i.width*s;c.height=i.height*s;c.getContext("2d").drawImage(i,0,0,c.width,c.height);c.toBlob(b=>ok(b),"image/jpeg",.8)};i.onerror=()=>ok(null);i.src=URL.createObjectURL(f)})}
 async function photo(id,path){const e=document.getElementById("p_"+id);const r=await SB.storage.from("visit-photos").createSignedUrl(path,120);
   e.innerHTML=r.error?M(r.error.message):`<img src="${r.data.signedUrl}" alt="Justificatif de la visite" style="max-width:100%;border-radius:8px;margin-top:6px">`}
 async function listV(){$("#t").innerHTML="Chargement…";
   const r=await SB.from("visits").select("id,visited_at,status,delegate_id,establishments(name,city),professionals(full_name,function),profiles(first_name,last_name),visit_files(storage_path)").order("visited_at",{ascending:false});
   if(r.error){$("#t").innerHTML=M(r.error.message);return}
   const sup=P.role!=="delegate";
-  $("#t").innerHTML=(r.data.map(a=>`<div class="card"><b>${esc(a.professionals?.full_name)}</b> <span class="mu">${esc(a.professionals?.function)}</span><br>${esc(a.establishments?.name)} ${esc(a.establishments?.city||"")}<br><span class="mu">${a.visited_at.slice(0,10)}${sup?" · "+esc((a.profiles?.first_name||"")+" "+(a.profiles?.last_name||"")):""}</span> <span class="tag ${a.status}">${ST[a.status]}</span> ${a.visit_files?.length?`<button class="lk" onclick="photo('${a.id}','${esc(a.visit_files[0].storage_path)}')">Voir la photo</button>`:""}<div id="p_${a.id}"></div>
+  $("#t").innerHTML=(r.data.map(a=>`<div class="card"><b>${esc(a.professionals?.full_name)}</b> <span class="mu">${esc(a.professionals?.function)}</span><br>${esc(a.establishments?.name)} ${esc(a.establishments?.city||"")}<br><span class="mu">${a.visited_at.slice(0,10)}${sup?" · "+esc((a.profiles?.first_name||"")+" "+(a.profiles?.last_name||"")):""}</span> <span class="tag ${a.status}">${ST[a.status]}</span> ${a.visit_files?.length?(PH[a.id]=a.visit_files.map(f=>f.storage_path),`<button class="lk" onclick="photos('${a.id}')">Voir les pages (${a.visit_files.length})</button>`):""}<div id="p_${a.id}"></div>
 ${sup&&a.status==="submitted"?`<button class="btn" onclick="setS('${a.id}','validated')">Valider</button><button class="btn s" onclick="setS('${a.id}','to_fix')">Renvoyer</button>`:""}
-${!sup&&["draft","to_fix"].includes(a.status)?`<button class="btn" onclick="setS('${a.id}','submitted')">Soumettre</button>`:""}</div>`).join("")||`<div class="card">Aucune visite pour l’instant.</div>`)+`<div id="r"></div>`}
+${!sup&&["draft","to_fix"].includes(a.status)?`<button class="btn" onclick="setS('${a.id}','submitted')">Soumettre</button>`:""}${!sup&&["draft","to_fix","submitted"].includes(a.status)?`<button class="btn s" onclick="delV('${a.id}')">Supprimer</button>`:""}</div>`).join("")||`<div class="card">Aucune visite pour l’instant.</div>`)+`<div id="r"></div>`}
 async function setS(id,s){const r=await SB.from("visits").update({status:s}).eq("id",id);if(r.error){$("#r").innerHTML=M(r.error.message);return}listV()}
 async function teamV(){const r=await SB.from("profiles").select("id,first_name,last_name,role,requested_role,approved").eq("lab_id",P.lab_id);
   $("#t").innerHTML=`<div class="card"><b>Code d’invitation : ${esc(L.join_code)}</b><p class="mu">Donnez-le à vos délégués et superviseurs. Ils devront ensuite être approuvés ici.</p></div>`+
@@ -188,5 +189,13 @@ const chk=(id,list)=>`<div class="ck" id="${id}"><label class="ci"><input type="
 const pick=id=>[...document.querySelectorAll("#"+id+" input[value]:checked")].map(i=>i.value).join(", ");
 function allTog(id,c){document.querySelectorAll("#"+id+" input[value]").forEach(i=>i.checked=c)}
 function syncAll(id){const a=[...document.querySelectorAll("#"+id+" input[value]")];document.querySelector("#"+id+" input:not([value])").checked=a.every(i=>i.checked)}
+function addPic(el){const f=el.files[0];el.value="";if(!f)return;if(pics.length>=5){alert("5 pages maximum.");return}pics.push(f);drawPics()}
+function rmPic(i){pics.splice(i,1);drawPics()}
+function drawPics(){const e=document.getElementById("pl");if(e)e.innerHTML=pics.map((f,i)=>`<div class="ci" style="justify-content:space-between"><span>✓ Page ${i+1} · ${esc(f.name)}</span><button type="button" class="lk" onclick="rmPic(${i})">Retirer</button></div>`).join("")}
+async function photos(id){const e=document.getElementById("p_"+id);const r=await SB.storage.from("visit-photos").createSignedUrls(PH[id]||[],120);
+  e.innerHTML=r.error?M(r.error.message):r.data.map((u,i)=>`<img src="${u.signedUrl}" alt="Page ${i+1} du justificatif" style="max-width:100%;border-radius:8px;margin-top:6px">`).join("")}
+async function delV(id){if(!confirm("Supprimer définitivement ce rapport et ses photos ?"))return;
+  const paths=PH[id]||[];if(paths.length){const d=await SB.storage.from("visit-photos").remove(paths);if(d.error){$("#r").innerHTML=M(d.error.message);return}}
+  const r=await SB.from("visits").delete().eq("id",id);if(r.error){$("#r").innerHTML=M(r.error.message);return}listV()}
 boot();
 </script></body></html>
