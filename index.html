@@ -63,6 +63,7 @@ async function out(){await SB.auth.signOut();msg="";location.hash="connexion";bo
 function render(){const m=$("#m");
   if(recovery)return m.innerHTML=newPwView();
   if(!U)return m.innerHTML=authView();
+  if(P?.role==="super_admin"&&P.approved){adminView();return}
   if(!P?.lab_id)return m.innerHTML=joinView();
   if(!P.approved)return m.innerHTML=`<div class="card"><h2>En attente de validation</h2><p>L’administrateur du laboratoire ${esc(L?.name||"")} doit approuver votre compte${P.requested_role==="supervisor"?" (fonction demandée : superviseur)":""}. Revenez plus tard.</p><button class="btn s" onclick="boot()">Actualiser</button></div>`;
   appView()}
@@ -202,5 +203,37 @@ async function photos(id){const e=document.getElementById("p_"+id);const r=await
 async function delV(id){if(!confirm("Supprimer définitivement ce rapport et ses photos ?"))return;
   const paths=PH[id]||[];if(paths.length){const d=await SB.storage.from("visit-photos").remove(paths);if(d.error){$("#r").innerHTML=M(d.error.message);return}}
   const r=await SB.from("visits").delete().eq("id",id);if(r.error){$("#r").innerHTML=M(r.error.message);return}listV()}
+let at="ov";
+async function adminView(){const T=[["ov","Vue d’ensemble"],["labs","Laboratoires"],["plans","Plans"],["pay","Paiements"],["set","Réglages"]];
+  $("#m").innerHTML=`<p class="mu">Plateforme · Super administrateur</p><div class="tabs">${T.map(([k,l])=>`<button class="btn ${k===at?"":"s"}" onclick="at='${k}';adminView()">${l}</button>`).join("")}</div><div id="t">Chargement…</div>`;
+  await ({ov:aOv,labs:aLabs,plans:aPlans,pay:aPay,set:aSet}[at])()}
+const num=id=>+document.getElementById(id).value||0,ER=e=>$("#r").innerHTML=M(e.message);
+async function aOv(){const r=await SB.rpc("platform_stats"),sb=await SB.from("subscriptions").select("status");if(r.error){$("#t").innerHTML=M(r.error.message);return}
+  const d=r.data,c=k=>(sb.data||[]).filter(x=>x.status===k).length,kp2=(l,x,i)=>`<div class="card c${i}"><div class="mu">${l}</div><div class="k">${x}</div></div>`;
+  $("#t").innerHTML=`<div class="kp">${kp2("Laboratoires",d.labs,1)}${kp2("Utilisateurs actifs",d.users,2)}${kp2("Visites (30 j)",d.visits30,3)}${kp2("Visites (total)",d.visits,4)}</div>
+<div class="card"><b>Abonnements</b><p class="mu" style="margin:4px 0 0">Essai : ${c("trial")} · Actifs : ${c("active")} · Suspendus : ${c("suspended")} · Expirés : ${c("expired")}</p></div>
+<div class="card"><b>Équipes</b><p class="mu" style="margin:4px 0 0">Directeurs : ${d.directors} · Superviseurs : ${d.supervisors} · Délégués : ${d.delegates} · En attente : ${d.pending}</p></div>`}
+async function aLabs(){const [l,pl,st]=await Promise.all([SB.from("laboratories").select("id,name,created_at,subscriptions(status,plan_id,trial_ends_at,period_end)").order("created_at",{ascending:false}),SB.from("plans").select("id,name"),SB.rpc("platform_stats")]);
+  const pc={};(st.data?.per_lab||[]).forEach(x=>pc[x.lab_id]=x);
+  $("#t").innerHTML=(l.data||[]).map(x=>{const b=[].concat(x.subscriptions)[0]||{};const i=x.id.slice(0,8);return `<div class="card"><b>${esc(x.name)}</b> <span class="mu">${(x.created_at||"").slice(0,10)} · ${pc[x.id]?.users||0} utilisateurs · ${pc[x.id]?.visits||0} visites</span>
+<label>Statut</label><select id="s_${i}">${["trial","active","suspended","expired"].map(k=>`<option value="${k}" ${b.status===k?"selected":""}>${{trial:"Essai",active:"Actif",suspended:"Suspendu",expired:"Expiré"}[k]}</option>`).join("")}</select>
+<label>Plan</label><select id="pl_${i}"><option value="">Aucun</option>${(pl.data||[]).map(q=>`<option value="${q.id}" ${b.plan_id===q.id?"selected":""}>${esc(q.name)}</option>`).join("")}</select>
+<label>Fin d’essai</label><input id="te_${i}" type="date" value="${(b.trial_ends_at||"").slice(0,10)}"><label>Fin de période payée</label><input id="pe_${i}" type="date" value="${(b.period_end||"").slice(0,10)}">
+<button class="btn" onclick="saveSub('${x.id}','${i}')">Enregistrer</button></div>`}).join("")+`<div id="r"></div>`}
+async function saveSub(id,i){const g=k=>document.getElementById(k+"_"+i).value;const r=await SB.from("subscriptions").update({status:g("s"),plan_id:g("pl")||null,trial_ends_at:g("te")||null,period_end:g("pe")||null}).eq("lab_id",id);r.error?ER(r.error):$("#r").innerHTML=M("Enregistré.",1)}
+async function aPlans(){const r=await SB.from("plans").select("*").order("price_xof");
+  const f=(i,q)=>`<label>Nom</label><input id="n_${i}" value="${esc(q.name||"")}"><label>Délégués max</label><input id="d_${i}" type="number" value="${q.max_delegates??5}"><label>Stockage max (Mo)</label><input id="m_${i}" type="number" value="${q.max_storage_mb??500}"><label>Prix par mois (FCFA)</label><input id="x_${i}" type="number" value="${q.price_xof??0}"><label class="ci"><input id="a_${i}" type="checkbox" ${q.active!==false?"checked":""}>Plan proposé</label>`;
+  $("#t").innerHTML=(r.data||[]).map(q=>`<div class="card">${f(q.id.slice(0,8),q)}<button class="btn" onclick="savePlan('${q.id}','${q.id.slice(0,8)}')">Enregistrer</button></div>`).join("")+`<div class="card"><b>Nouveau plan</b>${f("new",{})}<button class="btn" onclick="savePlan('','new')">Ajouter</button></div><div id="r"></div>`}
+async function savePlan(id,i){const o={name:v("n_"+i),max_delegates:num("d_"+i),max_storage_mb:num("m_"+i),price_xof:num("x_"+i),active:document.getElementById("a_"+i).checked};if(!o.name){$("#r").innerHTML=M("Indiquez un nom.");return}
+  const r=id?await SB.from("plans").update(o).eq("id",id):await SB.from("plans").insert(o);r.error?ER(r.error):aPlans()}
+async function aPay(){const [p,l]=await Promise.all([SB.from("payments").select("amount_xof,provider,status,external_ref,created_at,laboratories(name)").order("created_at",{ascending:false}).limit(50),SB.from("laboratories").select("id,name")]);
+  $("#t").innerHTML=`<div class="card"><b>Enregistrer un paiement reçu</b><label>Laboratoire</label><select id="pl_lab">${(l.data||[]).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("")}</select><label>Montant (FCFA)</label><input id="pm_a" type="number"><label>Moyen</label><select id="pm_p"><option value="wave">Wave</option><option value="orange_money">Orange Money</option><option value="virement">Virement</option><option value="especes">Espèces</option></select><label>Référence</label><input id="pm_r"><label class="ci"><input id="pm_s" type="checkbox" checked>Activer l’abonnement pour 30 jours</label><button class="btn" onclick="addPay()">Enregistrer</button></div><div id="r"></div>`+
+  (p.data||[]).map(x=>`<div class="card"><b>${(x.amount_xof||0).toLocaleString("fr-FR")} FCFA</b> <span class="mu">${esc(x.provider)} · ${(x.created_at||"").slice(0,10)}</span><br>${esc(x.laboratories?.name||"")} <span class="mu">${esc(x.external_ref||"")}</span></div>`).join("")}
+async function addPay(){const lab=v("pl_lab"),a=num("pm_a");if(!lab||a<=0){$("#r").innerHTML=M("Choisissez un laboratoire et un montant.");return}
+  const r=await SB.from("payments").insert({lab_id:lab,amount_xof:a,provider:v("pm_p"),status:"confirmed",external_ref:v("pm_r")||null});if(r.error)return ER(r.error);
+  if(document.getElementById("pm_s").checked){const e=new Date(Date.now()+30*864e5).toISOString().slice(0,10);const u=await SB.from("subscriptions").update({status:"active",period_end:e}).eq("lab_id",lab);if(u.error)return ER(u.error)}aPay()}
+async function aSet(){const r=await SB.from("app_settings").select("key,value"),m={};(r.data||[]).forEach(x=>m[x.key]=x.value);
+  $("#t").innerHTML=`<div class="card"><label>Durée de l’essai gratuit (jours)</label><input id="st_t" type="number" value="${esc(m.trial_days||14)}"><label>Contact support (WhatsApp ou e-mail)</label><input id="st_c" value="${esc(m.support_contact||"")}"><button class="btn" onclick="saveSet()">Enregistrer</button><div id="r"></div></div>`}
+async function saveSet(){const r=await SB.from("app_settings").upsert([{key:"trial_days",value:String(num("st_t")||14)},{key:"support_contact",value:v("st_c")}]);r.error?ER(r.error):$("#r").innerHTML=M("Enregistré.",1)}
 boot();
 </script></body></html>
