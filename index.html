@@ -38,11 +38,12 @@ main.wide{max-width:none;padding:0}
 .adm .sb button.on{background:var(--gr);color:#fff}
 .adm .ct{flex:1;min-width:0;padding:16px}
 @media(max-width:800px){.adm{flex-direction:column}.adm .sb{width:auto;display:flex;overflow-x:auto;gap:4px;padding:8px}.adm .sb button{width:auto;white-space:nowrap;margin:0}}
+[dir=rtl] .card,[dir=rtl] .adm .sb button,[dir=rtl] label,[dir=rtl] h2{text-align:right}
 .ph{display:flex;align-items:center;justify-content:center;border:2px dashed var(--gr);border-radius:10px;padding:22px;color:var(--gr);font-weight:600;cursor:pointer;margin-top:4px}
 .dn{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.al{border-color:#d69e2e}
 :focus-visible{outline:3px solid #4aa3ff;outline-offset:2px}
 </style></head><body>
-<header><span class="brand" id="br"></span><span id="who"></span></header>
+<header><span class="brand" id="br"></span><span style="display:flex;gap:8px;align-items:center"><select id="lg" onchange="setLang(this.value)" aria-label="Langue" style="width:auto;margin:0;padding:4px 6px;font-size:13px"></select><span id="who"></span></span></header>
 <main id="m">Chargement…</main>
 <script>
 const APP="MedVisit Pro";
@@ -64,6 +65,7 @@ async function boot(){
   const{data}=await SB.auth.getSession();U=data.session?.user||null;P=L=null;
   if(U){const r=await SB.from("profiles").select("*").eq("id",U.id).single();P=r.data;
     if(P?.lab_id){const l=await SB.from("laboratories").select("*").eq("id",P.lab_id).single();L=l.data}}
+  if(U&&P&&!P.lab_id&&pend){const q=pend;pend=null;try{localStorage.removeItem("mv_pend")}catch(e){}await finish(q);return}
   $("#who").innerHTML=U?`<button onclick="out()">Se déconnecter</button>`:"";
   render()}
 async function out(){await SB.auth.signOut();msg="";location.hash="connexion";boot()}
@@ -85,7 +87,7 @@ function authView(){const r=route();
 <label for="jc">Code d’invitation (votre superviseur pour un délégué, le directeur pour un superviseur)</label><input id="jc" autocapitalize="off"><p class="mu">Votre fonction et votre rattachement seront validés par l’administrateur du laboratoire.</p></div>
 <div id="bc" style="display:none"><label for="lb">Nom du laboratoire</label><input id="lb"><p class="mu">Vous en deviendrez l’administrateur.</p></div>
 <button class="btn w" onclick="signup()">Créer mon compte</button>${M(msg)}<button class="lk" onclick="go('connexion')">J’ai déjà un compte</button></div>`;
-  if(r==="verification")return head("Vérification de l’e-mail")+`<div class="card"><p class="mu">Un code a été envoyé à ${esc(pend?.em||"votre adresse e-mail")}. Saisissez-le ci-dessous.</p><label for="cd">Code reçu par e-mail</label><input id="cd" inputmode="numeric" autocomplete="one-time-code"><button class="btn w" onclick="verif()">Valider le code</button>${M(msg,msg.startsWith("Un nouveau"))}<button class="lk" onclick="resend()">Renvoyer le code</button></div>`;
+  if(r==="verification")return head("Confirmez votre e-mail")+`<div class="card"><p>Un e-mail de confirmation vient d’être envoyé à <b>${esc(pend?.em||"votre adresse")}</b>. Touchez le lien qu’il contient pour activer votre compte. Regardez aussi dans les courriers indésirables.</p><button class="btn w" onclick="resend()">Renvoyer l’e-mail</button>${M(msg,msg.startsWith("Un nouveau"))}<button class="lk" onclick="go('connexion')">J’ai confirmé : me connecter</button></div>`;
   if(r==="oubli")return head("Mot de passe oublié")+`<div class="card"><label for="em">E-mail du compte</label><input id="em" type="email" autocomplete="email"><button class="btn w" onclick="forgot()">Envoyer le lien</button>${M(msg,msg.startsWith("Si ")||msg.startsWith("Un e"))}<button class="lk" onclick="go('connexion')">Retour à la connexion</button></div>`;
   return head("Connexion")+`<div class="card"><label for="em">E-mail</label><input id="em" type="email" autocomplete="email"><label for="pw">Mot de passe</label><input id="pw" type="password" autocomplete="current-password">
 <button class="btn w" onclick="login()">Se connecter</button>${M(msg,msg.startsWith("Compte"))}<button class="lk" onclick="go('oubli')">Mot de passe oublié ?</button><br><button class="lk" onclick="go('inscription')">Créer un compte</button></div>`}
@@ -97,9 +99,9 @@ async function signup(){
   if(c&&!v("lb")){msg="Indiquez le nom du laboratoire.";return render2()}
   if(!c&&!v("jc")){msg="Indiquez le code d’invitation reçu de votre laboratoire.";return render2()}
   const f={fn:v("fn"),ln:v("ln"),em:v("em"),pw:v("pw"),lb:v("lb"),jc:v("jc"),rl:v("rl")};
-  const r=await SB.auth.signUp({email:f.em,password:f.pw,options:{data:{first_name:f.fn,last_name:f.ln}}});
+  const r=await SB.auth.signUp({email:f.em,password:f.pw,options:{emailRedirectTo:location.origin+location.pathname,data:{first_name:f.fn,last_name:f.ln}}});
   if(r.error){msg="Inscription impossible : "+r.error.message;return render2()}
-  if(!r.data.session){pend={c,...f};try{sessionStorage.setItem("mv_pend",JSON.stringify(pend))}catch(e){}go("verification");return}
+  if(!r.data.session){pend={c,lb:f.lb,jc:f.jc,rl:f.rl,em:f.em};try{localStorage.setItem("mv_pend",JSON.stringify(pend))}catch(e){}go("verification");return}
   await finish({c,...f})}
 function render2(){const keep=["fn","ln","em","pw","mode","rl","jc","lb"].map(i=>[i,v(i)]);render();keep.forEach(([i,x])=>{const e=document.getElementById(i);if(e)e.value=x});if(document.getElementById("mode"))tg()}
 async function forgot(){if(!v("em")){msg="Saisissez votre e-mail.";return render()}
@@ -194,7 +196,7 @@ async function dashV(){$("#t").innerHTML="Chargement…";const sup=P.role!=="del
 ${sup?`<div class="card"><b>Visites par délégué</b>${hb(grp(a=>((a.profiles?.first_name||"")+" "+(a.profiles?.last_name||"")).trim()))}</div>`:""}
 <div class="card"><b>Par type d’établissement</b>${hb(grp(a=>a.establishments?.kind))}</div>
 <div class="card"><b>Par ville</b>${hb(grp(a=>a.establishments?.city))}</div><div class="card"><b>Établissements les plus visités</b>${hb(grp(a=>a.establishments?.name))}</div></div>`}
-try{pend=JSON.parse(sessionStorage.getItem("mv_pend")||"null")}catch(e){}
+try{pend=JSON.parse(localStorage.getItem("mv_pend")||"null")}catch(e){}
 async function finish(p){const x=p.c?await SB.rpc("create_laboratory",{lab_name:p.lb}):await SB.rpc("join_laboratory",{code:p.jc,wanted:p.rl});msg=x.error?x.error.message:"";boot()}
 async function verif(){const r=await SB.auth.verifyOtp({email:pend?.em,token:v("cd"),type:"signup"});
   if(r.error){msg="Code invalide ou expiré : "+r.error.message;return render()}
@@ -278,5 +280,119 @@ async function addEv(){const k=v("ek"),o={lab_id:P.lab_id,kind:k,title:v("et2"),
   if(!o.title||!o.starts_on){$("#r").innerHTML=M("Indiquez un titre et une date.");return}if(k==="leave"&&!o.person_id){$("#r").innerHTML=M("Choisissez la personne en congé.");return}
   const r=await SB.from("lab_events").insert(o);r.error?$("#r").innerHTML=M(r.error.message):calV()}
 async function delEv(id){if(!confirm("Supprimer cet élément de l’agenda ?"))return;const r=await SB.from("lab_events").delete().eq("id",id);r.error?alert(r.error.message):calV()}
+const DICT=`Connexion|Sign in|تسجيل الدخول|Anmelden
+E-mail|Email|البريد الإلكتروني|E-Mail
+Mot de passe|Password|كلمة المرور|Passwort
+Se connecter|Sign in|دخول|Anmelden
+Mot de passe oublié ?|Forgot password?|نسيت كلمة المرور؟|Passwort vergessen?
+Créer un compte|Create an account|إنشاء حساب|Konto erstellen
+Créer mon compte|Create my account|إنشاء حسابي|Mein Konto erstellen
+J’ai déjà un compte|I already have an account|لدي حساب بالفعل|Ich habe schon ein Konto
+Prénom|First name|الاسم الأول|Vorname
+Nom|Last name|اسم العائلة|Nachname
+Mot de passe (8 caractères minimum)|Password (8 characters minimum)|كلمة المرور (8 أحرف على الأقل)|Passwort (mindestens 8 Zeichen)
+Je suis|I am|أنا|Ich bin
+Délégué médical ou superviseur|Medical rep or supervisor|مندوب طبي أو مشرف|Pharmaberater oder Supervisor
+Responsable : je crée mon laboratoire|Manager: I create my laboratory|مسؤول: أنشئ مختبري|Leiter: Ich lege mein Labor an
+Fonction|Role|الوظيفة|Funktion
+Superviseur|Supervisor|مشرف|Supervisor
+Délégué médical|Medical rep|مندوب طبي|Pharmaberater
+Administrateur|Administrator|مدير|Administrator
+Nom du laboratoire|Laboratory name|اسم المختبر|Laborname
+Code d’invitation|Invitation code|رمز الدعوة|Einladungscode
+Enregistrer|Save|حفظ|Speichern
+Se déconnecter|Sign out|تسجيل الخروج|Abmelden
+Votre laboratoire|Your laboratory|مختبرك|Ihr Labor
+Créer le laboratoire|Create the laboratory|إنشاء المختبر|Labor anlegen
+Rejoindre|Join|انضمام|Beitreten
+En attente de validation|Awaiting approval|في انتظار الموافقة|Warten auf Freigabe
+Actualiser|Refresh|تحديث|Aktualisieren
+Confirmez votre e-mail|Confirm your email|أكّد بريدك الإلكتروني|Bestätigen Sie Ihre E-Mail
+Renvoyer l’e-mail|Resend the email|إعادة إرسال الرسالة|E-Mail erneut senden
+J’ai confirmé : me connecter|I have confirmed: sign in|لقد أكدت: تسجيل الدخول|Bestätigt: anmelden
+Accès suspendu|Access suspended|الوصول معلّق|Zugang gesperrt
+Tableau de bord|Dashboard|لوحة القيادة|Dashboard
+Nouvelle visite|New visit|زيارة جديدة|Neuer Besuch
+Rapports|Reports|التقارير|Berichte
+Mes visites|My visits|زياراتي|Meine Besuche
+Équipe|Team|الفريق|Team
+Agenda|Calendar|الأجندة|Kalender
+Espace directeur|Director space|فضاء المدير|Direktionsbereich
+30 derniers jours|Last 30 days|آخر 30 يومًا|Letzte 30 Tage
+7 derniers jours|Last 7 days|آخر 7 أيام|Letzte 7 Tage
+90 derniers jours|Last 90 days|آخر 90 يومًا|Letzte 90 Tage
+Tout|All|الكل|Alle
+Visites|Visits|الزيارات|Besuche
+À valider|To validate|للمصادقة|Zu prüfen
+Validées|Validated|المصادق عليها|Freigegeben
+Délégués actifs|Active reps|المندوبون النشطون|Aktive Pharmaberater
+Brouillons|Drafts|المسودات|Entwürfe
+À corriger|To fix|للتصحيح|Zu korrigieren
+Statut des rapports|Report status|حالة التقارير|Berichtsstatus
+Brouillon|Draft|مسودة|Entwurf
+Soumis|Submitted|مُرسل|Eingereicht
+Validé|Validated|مصادق عليه|Freigegeben
+visites|visits|زيارات|Besuche
+Visites des 7 derniers jours|Visits in the last 7 days|زيارات آخر 7 أيام|Besuche der letzten 7 Tage
+Visites par délégué|Visits per rep|الزيارات حسب المندوب|Besuche pro Pharmaberater
+Par type d’établissement|By facility type|حسب نوع المؤسسة|Nach Einrichtungstyp
+Par ville|By city|حسب المدينة|Nach Stadt
+Rapports manquants|Missing reports|تقارير مفقودة|Fehlende Berichte
+Rapport de visite|Visit report|تقرير زيارة|Besuchsbericht
+Renseignez les informations de votre visite|Enter your visit information|أدخل معلومات زيارتك|Geben Sie die Besuchsdaten ein
+Date|Date|التاريخ|Datum
+Professionnel de santé|Healthcare professional|مهني صحي|Medizinische Fachkraft
+Fonction (une ou plusieurs)|Role (one or more)|الوظيفة (واحدة أو أكثر)|Funktion (eine oder mehrere)
+Tout sélectionner|Select all|تحديد الكل|Alle auswählen
+Médecin|Doctor|طبيب|Arzt
+Pharmacien|Pharmacist|صيدلي|Apotheker
+Sage-femme|Midwife|قابلة|Hebamme
+Infirmier|Nurse|ممرض|Pflegekraft
+Responsable de structure|Facility manager|مسؤول المؤسسة|Einrichtungsleiter
+Autre|Other|أخرى|Andere
+Établissement|Facility|المؤسسة|Einrichtung
+Type d’établissement (un ou plusieurs)|Facility type (one or more)|نوع المؤسسة (واحد أو أكثر)|Einrichtungstyp (einer oder mehrere)
+Pharmacie|Pharmacy|صيدلية|Apotheke
+Hôpital|Hospital|مستشفى|Krankenhaus
+Clinique|Clinic|عيادة|Klinik
+Centre de santé|Health center|مركز صحي|Gesundheitszentrum
+Poste de santé|Health post|مركز صحي صغير|Gesundheitsposten
+Cabinet médical|Medical practice|عيادة طبية|Arztpraxis
+Ville|City|المدينة|Stadt
+Objet de la visite|Purpose of the visit|موضوع الزيارة|Besuchszweck
+Résultat et observations|Result and notes|النتيجة والملاحظات|Ergebnis und Notizen
+Prochaine action|Next action|الإجراء التالي|Nächste Aktion
+📷 Ajouter une page (photo)|📷 Add a page (photo)|📷 إضافة صفحة (صورة)|📷 Seite hinzufügen (Foto)
+Enregistrer le brouillon|Save draft|حفظ المسودة|Entwurf speichern
+Soumettre|Submit|إرسال|Einreichen
+Valider|Validate|مصادقة|Freigeben
+Renvoyer|Send back|إعادة للتصحيح|Zurückgeben
+Supprimer|Delete|حذف|Löschen
+Approuver|Approve|موافقة|Genehmigen
+Aucune visite pour l’instant.|No visits yet.|لا توجد زيارات بعد.|Noch keine Besuche.
+Chargement…|Loading…|جارٍ التحميل…|Wird geladen…
+actif|active|نشط|aktiv
+en attente|pending|قيد الانتظار|ausstehend
+Noter|Rate|تقييم|Bewerten
+Pas encore de note|No rating yet|لا يوجد تقييم بعد|Noch keine Bewertung
+Réunion|Meeting|اجتماع|Besprechung
+Planning de la semaine|Weekly plan|خطة الأسبوع|Wochenplan
+Congé|Leave|إجازة|Urlaub
+Ajouter à l’agenda|Add to calendar|إضافة إلى الأجندة|Zum Kalender hinzufügen
+Titre|Title|العنوان|Titel
+Ajouter|Add|إضافة|Hinzufügen
+Rien de prévu ce mois-ci.|Nothing planned this month.|لا شيء مخطط هذا الشهر.|Diesen Monat ist nichts geplant.
+Code pour inviter des superviseurs|Code to invite supervisors|رمز دعوة المشرفين|Code zum Einladen von Supervisoren
+Votre code pour inviter vos délégués|Your code to invite your reps|رمزك لدعوة مندوبيك|Ihr Code zum Einladen Ihrer Pharmaberater`;
+const LANGS={fr:"Français",en:"English",ar:"العربية",de:"Deutsch"},TD={};let LANG="fr";
+try{LANG=localStorage.getItem("mv_lang")||(navigator.language||"fr").slice(0,2)}catch(e){}if(!LANGS[LANG])LANG="fr";
+DICT.trim().split("\n").forEach(l=>{const a=l.split("|");TD[a[0]]={en:a[1],ar:a[2],de:a[3]}});
+const trS=s=>{if(LANG==="fr")return s;const t=s.trim();if(!t)return s;if(TD[t])return s.replace(t,TD[t][LANG]);const ps=t.split(/( : | · )/);if(ps.length>1){const o=ps.map(x=>TD[x]?TD[x][LANG]:x).join("");return o===t?s:s.replace(t,o)}return s};
+function applyLang(root){if(LANG==="fr")return;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){const x=trS(n.nodeValue);if(x!==n.nodeValue)n.nodeValue=x}
+  if(root.querySelectorAll)root.querySelectorAll("[placeholder],[aria-label]").forEach(e=>["placeholder","aria-label"].forEach(a=>{const x=e.getAttribute(a);if(x){const y=trS(x);if(y!==x)e.setAttribute(a,y)}}))}
+new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1)applyLang(n);else if(n.nodeType===3){const x=trS(n.nodeValue);if(x!==n.nodeValue)n.nodeValue=x}}))).observe(document.body,{childList:true,subtree:true});
+function setLang(l){LANG=l;try{localStorage.setItem("mv_lang",l)}catch(e){}document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr";boot()}
+document.documentElement.lang=LANG;document.documentElement.dir=LANG==="ar"?"rtl":"ltr";
+document.getElementById("lg").innerHTML=Object.entries(LANGS).map(([k,v])=>`<option value="${k}" ${k===LANG?"selected":""}>${v}</option>`).join("");
 boot();
 </script></body></html>
