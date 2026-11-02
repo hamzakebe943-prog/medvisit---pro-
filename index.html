@@ -118,7 +118,7 @@ function joinView(){return head("Votre laboratoire")+`<div class="card"><p>Bonjo
 <label for="jc">Code d’invitation</label><input id="jc" autocapitalize="off"><button class="btn w s" onclick="joinLab()">Rejoindre</button>${M(msg)}</div>`}
 async function mkLab(){const r=await SB.rpc("create_laboratory",{lab_name:v("ln2")});msg=r.error?r.error.message:"";boot()}
 async function joinLab(){const r=await SB.rpc("join_laboratory",{code:v("jc"),wanted:v("rl")});msg=r.error?r.error.message:"";boot()}
-function appView(){const adm=P.role==="lab_admin",sup=adm||P.role==="supervisor";
+function appView(){const adm=P.role==="lab_admin",sup=adm||["supervisor","senior_supervisor"].includes(P.role);
   const T=[["dash","Tableau de bord"]].concat(adm?[]:[["new","Nouvelle visite"]]).concat([["list",sup?"Rapports":"Mes visites"]]).concat(sup?[["team","Équipe"]]:[]).concat([["cal","Agenda"]]);
   $("#m").innerHTML=`<p class="mu">${esc(L.name)} · ${RL[P.role]}</p><div class="tabs">${T.map(([k,l])=>`<button class="btn ${k===tab?"":"s"}" onclick="tab='${k}';appView()">${l}</button>`).join("")}</div><div id="t"></div>`;
   ({dash:dashV,new:newV,list:listV,team:teamV,cal:calV}[tab])()}
@@ -161,13 +161,13 @@ async function setS(id,s){const r=await SB.from("visits").update({status:s}).eq(
 async function teamV(){const adm=P.role==="lab_admin";
   const r=await SB.from("profiles").select("id,first_name,last_name,email,role,requested_role,approved,supervisor_id,join_code,is_senior,team_name").eq("lab_id",P.lab_id);
   const nr=await SB.from("delegate_notes").select("delegate_id,rating,comment,created_at").order("created_at",{ascending:false});NT={};(nr.data||[]).forEach(x=>{(NT[x.delegate_id]=NT[x.delegate_id]||[]).push(x)});
-  const m=r.data||[],sups=m.filter(u=>u.role==="supervisor"&&u.approved),nm=u=>esc(((u.first_name||"")+" "+(u.last_name||"")).trim());
+  const m=r.data||[],sups=m.filter(u=>["supervisor","senior_supervisor"].includes(u.role)&&u.approved),nm=u=>esc(((u.first_name||"")+" "+(u.last_name||"")).trim());
   const code=adm?`<b>Code pour inviter des superviseurs : ${esc(L.join_code)}</b><p class="mu">Donnez-le à vos superviseurs. Vous les approuvez ensuite ici.</p>`:`<b>Votre code pour inviter vos délégués : ${esc(P.join_code)}</b><p class="mu">${P.is_senior?"Vos superviseurs choisissent « Superviseur » à l’inscription et vos délégués « Délégué médical », avec ce même code. ":"Chaque délégué qui s’inscrit avec ce code est rattaché à vous. "}Vous les approuvez ensuite ici.</p><input id="tn_${P.id}" placeholder="Nom de votre équipe" value="${esc(P.team_name||"")}"><button class="btn s" onclick="setTeam('${P.id}')">Enregistrer</button>`;
   $("#t").innerHTML=`<div class="card">${code}</div>`+m.filter(u=>u.id!==U.id).map(u=>{const rr=u.approved?u.role:(u.requested_role||u.role);return `<div class="card"><b>${nm(u)}</b> <span class="mu">${RL[rr]} · ${u.approved?"actif":"en attente"}</span><br><span class="mu">${esc(u.email||"")}</span>${u.supervisor_id?`<br><span class="mu">Superviseur : ${nm(m.find(x=>x.id===u.supervisor_id)||{})}</span>`:""}<br>
 ${adm?`<select id="r_${u.id}" ${u.approved?`onchange="setRole('${u.id}',this.value)"`:""}><option value="delegate" ${rr==="delegate"?"selected":""}>Délégué médical</option><option value="supervisor" ${rr==="supervisor"?"selected":""}>Superviseur</option></select>`:""}
 ${tmLine(u,m)}${adm&&(u.role==="delegate"||u.role==="supervisor")?`<select onchange="setSup('${u.id}',this.value)"><option value="">Aucun superviseur</option>${(u.role==="supervisor"?sups.filter(x=>x.is_senior&&x.id!==u.id):sups).map(s2=>`<option value="${s2.id}" ${u.supervisor_id===s2.id?"selected":""}>${nm(s2)}</option>`).join("")}</select>`:""}
 ${u.approved||!(adm||u.supervisor_id===U.id)?"":`<button class="btn" onclick="appr('${u.id}')">Approuver</button>`}${noteBlock(u)}</div>`}).join("")+`<div id="r"></div>`}
-async function appr(id){const el=document.getElementById("r_"+id),upd={approved:true};if(el)upd.role=el.value;const r=await SB.from("profiles").update(upd).eq("id",id);if(r.error){$("#r").innerHTML=M(r.error.message);return}teamV()}
+async function appr(id){const el=document.getElementById("r_"+id),upd={approved:true};if(el)upd.role=el.value;else{const q=await SB.from("profiles").select("requested_role").eq("id",id).single();if(q.data?.requested_role)upd.role=q.data.requested_role}const r=await SB.from("profiles").update(upd).eq("id",id);if(r.error){$("#r").innerHTML=M(r.error.message);return}teamV()}
 async function setSup(id,v2){const r=await SB.from("profiles").update({supervisor_id:v2||null}).eq("id",id);if(r.error)$("#r").innerHTML=M(r.error.message)}
 async function setRole(id,role){const r=await SB.from("profiles").update({role}).eq("id",id);if(r.error)$("#r").innerHTML=M(r.error.message)}
 function donut(p){const t=p.reduce((a,x)=>a+x[1],0),C=2*Math.PI*40;let o=0;
@@ -265,7 +265,7 @@ async function aSec(){const [a,l]=await Promise.all([SB.from("admin_audit").sele
 let NT={},cm=new Date();cm.setDate(1);
 const KD={meeting:["Réunion","#2b6cb0"],week:["Semaine","#6b3fb5"],leave:["Congé","#b7791f"]},isod=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 function noteBlock(u){if(u.role!=="delegate"||!u.approved)return "";const n=NT[u.id]||[],avg=n.length?(n.reduce((a,x)=>a+x.rating,0)/n.length).toFixed(1):null;
-  return `<div style="margin-top:8px;border-top:1px solid var(--bd);padding-top:6px"><span class="mu">${avg?"Note moyenne : "+avg+"/5 ("+n.length+" note"+(n.length>1?"s":"")+")"+(n[0].comment?" · dernier commentaire : "+esc(n[0].comment):""):"Pas encore de note"}</span>${P.role==="supervisor"?`<div class="row" style="margin-top:6px"><select id="nt_${u.id}">${[5,4,3,2,1].map(k=>`<option value="${k}">${k}/5</option>`).join("")}</select><input id="nc_${u.id}" placeholder="Commentaire (facultatif)"></div><button class="btn s" onclick="addNote('${u.id}')">Noter</button>`:""}</div>`}
+  return `<div style="margin-top:8px;border-top:1px solid var(--bd);padding-top:6px"><span class="mu">${avg?"Note moyenne : "+avg+"/5 ("+n.length+" note"+(n.length>1?"s":"")+")"+(n[0].comment?" · dernier commentaire : "+esc(n[0].comment):""):"Pas encore de note"}</span>${["supervisor","senior_supervisor"].includes(P.role)?`<div class="row" style="margin-top:6px"><select id="nt_${u.id}">${[5,4,3,2,1].map(k=>`<option value="${k}">${k}/5</option>`).join("")}</select><input id="nc_${u.id}" placeholder="Commentaire (facultatif)"></div><button class="btn s" onclick="addNote('${u.id}')">Noter</button>`:""}</div>`}
 async function addNote(id){const r=await SB.from("delegate_notes").insert({lab_id:P.lab_id,delegate_id:id,rating:+document.getElementById("nt_"+id).value,comment:v("nc_"+id)||null});r.error?$("#r").innerHTML=M(r.error.message):teamV()}
 async function calV(){const adm=P.role==="lab_admin",y=cm.getFullYear(),mo=cm.getMonth(),f=new Date(y,mo,1),l=new Date(y,mo+1,0);
   const [e,pr]=await Promise.all([SB.from("lab_events").select("*").lte("starts_on",isod(l)).gte("ends_on",isod(f)).order("starts_on"),SB.from("profiles").select("id,first_name,last_name,role,approved")]);
@@ -419,7 +419,8 @@ Août|August|أغسطس|August
 Septembre|September|سبتمبر|September
 Octobre|October|أكتوبر|Oktober
 Novembre|November|نوفمبر|November
-Décembre|December|ديسمبر|Dezember`;
+Décembre|December|ديسمبر|Dezember
+Superviseur général|Senior supervisor|مشرف عام|Leitender Supervisor`;
 const LANGS={fr:"Français",en:"English",ar:"العربية",de:"Deutsch"},TD={};let LANG="fr";
 try{LANG=localStorage.getItem("mv_lang")||(navigator.language||"fr").slice(0,2)}catch(e){}if(!LANGS[LANG])LANG="fr";
 DICT.trim().split("\n").forEach(l=>{const a=l.split("|");TD[a[0]]={en:a[1],ar:a[2],de:a[3]}});
