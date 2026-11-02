@@ -383,11 +383,37 @@ Titre|Title|العنوان|Titel
 Ajouter|Add|إضافة|Hinzufügen
 Rien de prévu ce mois-ci.|Nothing planned this month.|لا شيء مخطط هذا الشهر.|Diesen Monat ist nichts geplant.
 Code pour inviter des superviseurs|Code to invite supervisors|رمز دعوة المشرفين|Code zum Einladen von Supervisoren
-Votre code pour inviter vos délégués|Your code to invite your reps|رمزك لدعوة مندوبيك|Ihr Code zum Einladen Ihrer Pharmaberater`;
+Votre code pour inviter vos délégués|Your code to invite your reps|رمزك لدعوة مندوبيك|Ihr Code zum Einladen Ihrer Pharmaberater
+Établissements les plus visités|Most visited facilities|المؤسسات الأكثر زيارة|Meistbesuchte Einrichtungen
+Visites par mois|Visits per month|الزيارات حسب الشهر|Besuche pro Monat
+Photos du cachet ou justificatifs (recto, verso)|Photos of the stamp or supporting documents (front, back)|صور الختم أو المستندات (الوجه والظهر)|Fotos von Stempel oder Nachweisen (Vorder- und Rückseite)
+Produits présentés (séparés par des virgules)|Products presented (separated by commas)|المنتجات المعروضة (مفصولة بفواصل)|Vorgestellte Produkte (durch Kommas getrennt)
+Jusqu’à 5 pages (recto, verso, feuilles de signatures), 2 Mo maximum chacune, PNG ou JPG. Aucune donnée de patient. Une photo seule ne prouve pas qu’une visite a eu lieu.|Up to 5 pages (front, back, signature sheets), 2 MB maximum each, PNG or JPG. No patient data. A photo alone does not prove that a visit took place.|حتى 5 صفحات (الوجه، الظهر، أوراق التوقيعات)، بحد أقصى 2 ميغابايت لكل صفحة، PNG أو JPG. لا بيانات للمرضى. الصورة وحدها لا تثبت حدوث الزيارة.|Bis zu 5 Seiten (Vorder-, Rückseite, Unterschriftenlisten), je höchstens 2 MB, PNG oder JPG. Keine Patientendaten. Ein Foto allein beweist keinen Besuch.
+Aucun superviseur|No supervisor|بدون مشرف|Kein Supervisor
+Commentaire (facultatif)|Comment (optional)|تعليق (اختياري)|Kommentar (optional)
+Retirer|Remove|إزالة|Entfernen
+Voir les pages|View pages|عرض الصفحات|Seiten ansehen
+Type|Type|النوع|Typ
+Du|From|من|Von
+Au|To|إلى|Bis
+Note|Note|ملاحظة|Notiz
+Personne (pour un congé)|Person (for leave)|الشخص (للإجازة)|Person (bei Urlaub)
+Janvier|January|يناير|Januar
+Février|February|فبراير|Februar
+Mars|March|مارس|März
+Avril|April|أبريل|April
+Mai|May|مايو|Mai
+Juin|June|يونيو|Juni
+Juillet|July|يوليو|Juli
+Août|August|أغسطس|August
+Septembre|September|سبتمبر|September
+Octobre|October|أكتوبر|Oktober
+Novembre|November|نوفمبر|November
+Décembre|December|ديسمبر|Dezember`;
 const LANGS={fr:"Français",en:"English",ar:"العربية",de:"Deutsch"},TD={};let LANG="fr";
 try{LANG=localStorage.getItem("mv_lang")||(navigator.language||"fr").slice(0,2)}catch(e){}if(!LANGS[LANG])LANG="fr";
 DICT.trim().split("\n").forEach(l=>{const a=l.split("|");TD[a[0]]={en:a[1],ar:a[2],de:a[3]}});
-const trS=s=>{if(LANG==="fr")return s;const t=s.trim();if(!t)return s;if(TD[t])return s.replace(t,TD[t][LANG]);const ps=t.split(/( : | · )/);if(ps.length>1){const o=ps.map(x=>TD[x]?TD[x][LANG]:x).join("");return o===t?s:s.replace(t,o)}return s};
+const trS=s=>{if(LANG==="fr")return s;const t=s.trim();if(!t)return s;if(TD[t])return s.replace(t,TD[t][LANG]);const m1=t.match(/^(\S+) (\d{4})$/);if(m1&&TD[m1[1]])return s.replace(t,TD[m1[1]][LANG]+" "+m1[2]);const m2=t.match(/^(.*) \((\d+)\)$/);if(m2&&TD[m2[1]])return s.replace(t,TD[m2[1]][LANG]+" ("+m2[2]+")");const ps=t.split(/( : | · )/);if(ps.length>1){const o=ps.map(x=>TD[x]?TD[x][LANG]:x).join("");return o===t?s:s.replace(t,o)}return s};
 function applyLang(root){if(LANG==="fr")return;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){const x=trS(n.nodeValue);if(x!==n.nodeValue)n.nodeValue=x}
   if(root.querySelectorAll)root.querySelectorAll("[placeholder],[aria-label]").forEach(e=>["placeholder","aria-label"].forEach(a=>{const x=e.getAttribute(a);if(x){const y=trS(x);if(y!==x)e.setAttribute(a,y)}}))}
 new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1)applyLang(n);else if(n.nodeType===3){const x=trS(n.nodeValue);if(x!==n.nodeValue)n.nodeValue=x}}))).observe(document.body,{childList:true,subtree:true});
