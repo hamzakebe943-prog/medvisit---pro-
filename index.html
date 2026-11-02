@@ -84,7 +84,7 @@ function authView(){const r=route();
 <label for="em">E-mail</label><input id="em" type="email" autocomplete="email"><label for="pw">Mot de passe (8 caractères minimum)</label><input id="pw" type="password" autocomplete="new-password">
 <label for="mode">Je suis</label><select id="mode" onchange="tg()"><option value="join">Délégué médical ou superviseur</option><option value="create">Responsable : je crée mon laboratoire</option></select>
 <div id="bj"><label for="rl">Fonction</label><select id="rl"><option value="delegate">Délégué médical</option><option value="supervisor">Superviseur</option></select>
-<label for="jc">Code d’invitation (votre superviseur pour un délégué, le directeur pour un superviseur)</label><input id="jc" autocapitalize="off"><p class="mu">Votre fonction et votre rattachement seront validés par l’administrateur du laboratoire.</p></div>
+<label for="jc">Code d’invitation de votre responsable</label><input id="jc" autocapitalize="off"><p class="mu">Votre fonction et votre rattachement seront validés par l’administrateur du laboratoire.</p></div>
 <div id="bc" style="display:none"><label for="lb">Nom du laboratoire</label><input id="lb"><p class="mu">Vous en deviendrez l’administrateur.</p></div>
 <button class="btn w" onclick="signup()">Créer mon compte</button>${M(msg)}<button class="lk" onclick="go('connexion')">J’ai déjà un compte</button></div>`;
   if(r==="verification")return head("Confirmez votre e-mail")+`<div class="card"><p>Un e-mail de confirmation vient d’être envoyé à <b>${esc(pend?.em||"votre adresse")}</b>. Touchez le lien qu’il contient pour activer votre compte. Regardez aussi dans les courriers indésirables.</p><button class="btn w" onclick="resend()">Renvoyer l’e-mail</button>${M(msg,msg.startsWith("Un nouveau"))}<button class="lk" onclick="go('connexion')">J’ai confirmé : me connecter</button></div>`;
@@ -159,14 +159,14 @@ ${a.delegate_id!==U.id&&sup&&a.status==="submitted"?`<button class="btn" onclick
 ${a.delegate_id===U.id&&["draft","to_fix"].includes(a.status)?`<button class="btn" onclick="setS('${a.id}','submitted')">Soumettre</button>`:""}${a.delegate_id===U.id&&["draft","to_fix","submitted"].includes(a.status)?`<button class="btn s" onclick="delV('${a.id}')">Supprimer</button>`:""}</div>`).join("")||`<div class="card">Aucune visite pour l’instant.</div>`)+`<div id="r"></div>`}
 async function setS(id,s){const r=await SB.from("visits").update({status:s}).eq("id",id);if(r.error){$("#r").innerHTML=M(r.error.message);return}listV()}
 async function teamV(){const adm=P.role==="lab_admin";
-  const r=await SB.from("profiles").select("id,first_name,last_name,email,role,requested_role,approved,supervisor_id,join_code").eq("lab_id",P.lab_id);
+  const r=await SB.from("profiles").select("id,first_name,last_name,email,role,requested_role,approved,supervisor_id,join_code,is_senior,team_name").eq("lab_id",P.lab_id);
   const nr=await SB.from("delegate_notes").select("delegate_id,rating,comment,created_at").order("created_at",{ascending:false});NT={};(nr.data||[]).forEach(x=>{(NT[x.delegate_id]=NT[x.delegate_id]||[]).push(x)});
   const m=r.data||[],sups=m.filter(u=>u.role==="supervisor"&&u.approved),nm=u=>esc(((u.first_name||"")+" "+(u.last_name||"")).trim());
-  const code=adm?`<b>Code pour inviter des superviseurs : ${esc(L.join_code)}</b><p class="mu">Donnez-le à vos superviseurs. Vous les approuvez ensuite ici.</p>`:`<b>Votre code pour inviter vos délégués : ${esc(P.join_code)}</b><p class="mu">Chaque délégué qui s’inscrit avec ce code est rattaché à vous. Vous l’approuvez ensuite ici.</p>`;
-  $("#t").innerHTML=`<div class="card">${code}</div>`+m.filter(u=>u.id!==U.id).map(u=>{const rr=u.approved?u.role:(u.requested_role||u.role);return `<div class="card"><b>${nm(u)}</b> <span class="mu">${RL[rr]} · ${u.approved?"actif":"en attente"}</span><br><span class="mu">${esc(u.email||"")}</span>${u.role==="delegate"&&u.supervisor_id?`<br><span class="mu">Superviseur : ${nm(m.find(x=>x.id===u.supervisor_id)||{})}</span>`:""}<br>
+  const code=adm?`<b>Code pour inviter des superviseurs : ${esc(L.join_code)}</b><p class="mu">Donnez-le à vos superviseurs. Vous les approuvez ensuite ici.</p>`:`<b>Votre code pour inviter vos délégués : ${esc(P.join_code)}</b><p class="mu">${P.is_senior?"Vos superviseurs choisissent « Superviseur » à l’inscription et vos délégués « Délégué médical », avec ce même code. ":"Chaque délégué qui s’inscrit avec ce code est rattaché à vous. "}Vous les approuvez ensuite ici.</p><input id="tn_${P.id}" placeholder="Nom de votre équipe" value="${esc(P.team_name||"")}"><button class="btn s" onclick="setTeam('${P.id}')">Enregistrer</button>`;
+  $("#t").innerHTML=`<div class="card">${code}</div>`+m.filter(u=>u.id!==U.id).map(u=>{const rr=u.approved?u.role:(u.requested_role||u.role);return `<div class="card"><b>${nm(u)}</b> <span class="mu">${RL[rr]} · ${u.approved?"actif":"en attente"}</span><br><span class="mu">${esc(u.email||"")}</span>${u.supervisor_id?`<br><span class="mu">Superviseur : ${nm(m.find(x=>x.id===u.supervisor_id)||{})}</span>`:""}<br>
 ${adm?`<select id="r_${u.id}" ${u.approved?`onchange="setRole('${u.id}',this.value)"`:""}><option value="delegate" ${rr==="delegate"?"selected":""}>Délégué médical</option><option value="supervisor" ${rr==="supervisor"?"selected":""}>Superviseur</option></select>`:""}
-${adm&&u.role==="delegate"?`<select onchange="setSup('${u.id}',this.value)"><option value="">Aucun superviseur</option>${sups.map(s2=>`<option value="${s2.id}" ${u.supervisor_id===s2.id?"selected":""}>${nm(s2)}</option>`).join("")}</select>`:""}
-${u.approved?"":`<button class="btn" onclick="appr('${u.id}')">Approuver</button>`}${noteBlock(u)}</div>`}).join("")+`<div id="r"></div>`}
+${tmLine(u,m)}${adm&&(u.role==="delegate"||u.role==="supervisor")?`<select onchange="setSup('${u.id}',this.value)"><option value="">Aucun superviseur</option>${(u.role==="supervisor"?sups.filter(x=>x.is_senior&&x.id!==u.id):sups).map(s2=>`<option value="${s2.id}" ${u.supervisor_id===s2.id?"selected":""}>${nm(s2)}</option>`).join("")}</select>`:""}
+${u.approved||!(adm||u.supervisor_id===U.id)?"":`<button class="btn" onclick="appr('${u.id}')">Approuver</button>`}${noteBlock(u)}</div>`}).join("")+`<div id="r"></div>`}
 async function appr(id){const el=document.getElementById("r_"+id),upd={approved:true};if(el)upd.role=el.value;const r=await SB.from("profiles").update(upd).eq("id",id);if(r.error){$("#r").innerHTML=M(r.error.message);return}teamV()}
 async function setSup(id,v2){const r=await SB.from("profiles").update({supervisor_id:v2||null}).eq("id",id);if(r.error)$("#r").innerHTML=M(r.error.message)}
 async function setRole(id,role){const r=await SB.from("profiles").update({role}).eq("id",id);if(r.error)$("#r").innerHTML=M(r.error.message)}
@@ -280,6 +280,13 @@ async function addEv(){const k=v("ek"),o={lab_id:P.lab_id,kind:k,title:v("et2"),
   if(!o.title||!o.starts_on){$("#r").innerHTML=M("Indiquez un titre et une date.");return}if(k==="leave"&&!o.person_id){$("#r").innerHTML=M("Choisissez la personne en congé.");return}
   const r=await SB.from("lab_events").insert(o);r.error?$("#r").innerHTML=M(r.error.message):calV()}
 async function delEv(id){if(!confirm("Supprimer cet élément de l’agenda ?"))return;const r=await SB.from("lab_events").delete().eq("id",id);r.error?alert(r.error.message):calV()}
+function tmLine(u,m){const adm=P.role==="lab_admin",sp=m.find(x=>x.id===u.supervisor_id),tn=u.role==="supervisor"?u.team_name:sp?.team_name;
+  let h=tn?`<br><span class="mu">Équipe : ${esc(tn)}</span>`:"";
+  if(u.role==="supervisor"&&u.approved){if(adm)h+=`<label class="ci"><input type="checkbox" ${u.is_senior?"checked":""} onchange="setSenior('${u.id}',this.checked)">Superviseur général</label>`;
+    if(adm||(P.is_senior&&u.supervisor_id===U.id))h+=`<input id="tn_${u.id}" placeholder="Nom de l’équipe" value="${esc(u.team_name||"")}"><button class="btn s" onclick="setTeam('${u.id}')">Enregistrer</button>`}
+  return h}
+async function setSenior(id,b){const r=await SB.from("profiles").update({is_senior:b}).eq("id",id);if(r.error){alert(r.error.message);teamV()}}
+async function setTeam(id){const r=await SB.from("profiles").update({team_name:v("tn_"+id)||null}).eq("id",id);if(r.error){alert(r.error.message);return}if(id===P.id)P.team_name=v("tn_"+id);teamV()}
 const DICT=`Connexion|Sign in|تسجيل الدخول|Anmelden
 E-mail|Email|البريد الإلكتروني|E-Mail
 Mot de passe|Password|كلمة المرور|Passwort
@@ -384,6 +391,9 @@ Ajouter|Add|إضافة|Hinzufügen
 Rien de prévu ce mois-ci.|Nothing planned this month.|لا شيء مخطط هذا الشهر.|Diesen Monat ist nichts geplant.
 Code pour inviter des superviseurs|Code to invite supervisors|رمز دعوة المشرفين|Code zum Einladen von Supervisoren
 Votre code pour inviter vos délégués|Your code to invite your reps|رمزك لدعوة مندوبيك|Ihr Code zum Einladen Ihrer Pharmaberater
+Superviseur général|Senior supervisor|مشرف عام|Leitender Supervisor
+Nom de l’équipe|Team name|اسم الفريق|Teamname
+Nom de votre équipe|Your team name|اسم فريقك|Name Ihres Teams
 Établissements les plus visités|Most visited facilities|المؤسسات الأكثر زيارة|Meistbesuchte Einrichtungen
 Visites par mois|Visits per month|الزيارات حسب الشهر|Besuche pro Monat
 Photos du cachet ou justificatifs (recto, verso)|Photos of the stamp or supporting documents (front, back)|صور الختم أو المستندات (الوجه والظهر)|Fotos von Stempel oder Nachweisen (Vorder- und Rückseite)
