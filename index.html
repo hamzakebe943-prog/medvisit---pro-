@@ -126,8 +126,8 @@ function newV(){pics=[];if(P.role==="lab_admin"){$("#t").innerHTML=`<div class="
 $("#t").innerHTML=`<h2>Rapport de visite</h2><p class="sub">Renseignez les informations de votre visite</p><div class="card"><label for="d">Date</label><input id="d" type="date" value="${new Date().toISOString().slice(0,10)}">
 <label for="pro">Professionnel de santé</label><input id="pro"><label>Fonction (une ou plusieurs)</label>${chk("fo",FUNCS)}
 <label for="et">Établissement</label><input id="et"><label>Type d’établissement (un ou plusieurs)</label>${chk("ty",KINDS)}
-<label for="ci">Ville</label><input id="ci"><label for="ob">Objet de la visite</label><input id="ob"><label for="pd">Produits présentés (séparés par des virgules)</label><input id="pd">
-<label for="re">Résultat et observations</label><textarea id="re" rows="3"></textarea><label for="na">Prochaine action</label><input id="na">
+<label for="ci">Ville</label><input id="ci"><label for="pd">Produits présentés (séparés par des virgules)</label><input id="pd">
+<label for="re">Résultat et observations</label><textarea id="re" rows="3"></textarea>
 <label for="ph">Photos du cachet ou justificatifs (recto, verso)</label><label class="ph" for="ph"><span>📷 Ajouter une page (photo)</span></label><input id="ph" type="file" accept="image/png,image/jpeg" capture="environment" hidden onchange="addPic(this)"><div id="pl"></div><p class="mu">Jusqu’à 5 pages (recto, verso, feuilles de signatures), 2 Mo maximum chacune, PNG ou JPG. Aucune donnée de patient. Une photo seule ne prouve pas qu’une visite a eu lieu.</p>
 <button class="btn s" onclick="saveV('draft')">Enregistrer le brouillon</button><button class="btn" onclick="saveV('submitted')">Soumettre</button><div id="r"></div></div>`}
 async function saveV(st){if(busy)return;busy=true;try{await saveV2(st)}finally{busy=false}}
@@ -138,7 +138,7 @@ async function saveV2(st){const r=$("#r");if(!v("pro")||!v("et")||!pick("fo")||!
   let p=await SB.from("professionals").select("id").eq("lab_id",P.lab_id).eq("establishment_id",eid).ilike("full_name",v("pro")).limit(1);
   let pid=p.data?.[0]?.id;
   if(!pid){const n=await SB.from("professionals").insert({lab_id:P.lab_id,establishment_id:eid,full_name:v("pro"),function:pick("fo")}).select("id").single();if(n.error){r.innerHTML=M(n.error.message);return}pid=n.data.id}
-  const x=await SB.from("visits").insert({lab_id:P.lab_id,delegate_id:U.id,visited_at:v("d")+"T09:00:00Z",establishment_id:eid,professional_id:pid,purpose:v("ob"),products:v("pd")?v("pd").split(",").map(s=>s.trim()):[],outcome:v("re"),next_action:v("na"),status:st}).select("id").single();
+  const x=await SB.from("visits").insert({lab_id:P.lab_id,delegate_id:U.id,visited_at:v("d")+"T09:00:00Z",establishment_id:eid,professional_id:pid,products:v("pd")?v("pd").split(",").map(s=>s.trim()):[],outcome:v("re"),status:st}).select("id").single();
   if(x.error){r.innerHTML=M(x.error.message);return}
   for(let i=0;i<pics.length;i++){const b=await shrink(pics[i]);if(!b||b.size>2e6){r.innerHTML=M("Visite enregistrée, mais la page "+(i+1)+" est illisible ou dépasse 2 Mo.");return}
     const path=P.lab_id+"/"+x.data.id+"/"+Date.now()+"_"+i+".jpg";
